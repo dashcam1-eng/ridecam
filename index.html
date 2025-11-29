@@ -69,15 +69,16 @@ nav button.active {
 }
 
 #preview {
-  position:absolute; top:0; left:0;
+  position:absolute; top:60px; left:0;
   width:100%; height:auto;
   display:none; background:#111;
   z-index:1;
 }
 
 canvas {
-  position:absolute;
-  top:0; left:0;
+  position: absolute;
+  top:60px; /* below nav bar */
+  left: 0;
   z-index:2;
   pointer-events:none;
 }
@@ -116,22 +117,22 @@ button {
 
 .controls {
   position:absolute;
-  top:70px; /* moved to top under nav */
+  top:70px; /* place above video, always visible */
   left:50%;
   transform:translateX(-50%);
-  width:90%;
+  width:auto;
   display:flex;
   justify-content:center;
   gap:14px;
-  z-index:3;
   display:none;
+  z-index:4;
 }
 
 .control-btn {
-  padding:20px 28px;
-  font-size:22px;
+  padding:14px 20px;
+  font-size:18px;
   border:none;
-  border-radius:14px;
+  border-radius:12px;
   cursor:pointer;
 }
 
@@ -164,8 +165,8 @@ h1 {
 
 @media(max-width:480px){
   .control-btn, button{
-    padding:16px 22px;
-    font-size:18px;
+    padding:12px 18px;
+    font-size:16px;
   }
   #description { font-size:18px; }
 }
@@ -345,7 +346,6 @@ let drawing = false;
 const overlayCanvas = document.createElement("canvas");
 overlayCanvas.style.display = "none";
 document.body.appendChild(overlayCanvas);
-
 const ctx = overlayCanvas.getContext("2d");
 
 function pickMimeType() {
@@ -363,17 +363,23 @@ function pickMimeType() {
 
 function resizeCanvas() {
   overlayCanvas.width = preview.videoWidth || window.innerWidth;
-  overlayCanvas.height = preview.videoHeight || window.innerHeight;
+  overlayCanvas.height = preview.videoHeight || window.innerHeight - 60;
+  overlayCanvas.style.top = '60px';
 }
 preview.addEventListener("loadedmetadata", resizeCanvas);
 window.addEventListener("resize", resizeCanvas);
 
+let speedKmh = 0; // speed removed from GPS; just placeholder 0
+
 function drawOverlay() {
   if (!drawing) return;
+  ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   ctx.drawImage(preview, 0, 0, overlayCanvas.width, overlayCanvas.height);
   ctx.font = "26px Arial";
   ctx.fillStyle = "yellow";
-  ctx.fillText(new Date().toLocaleString(), 12, 40);
+  ctx.textBaseline = "top";
+  ctx.fillText(new Date().toLocaleString(), 12, 12);
+  ctx.fillText(`Speed: ${speedKmh.toFixed(1)} km/h`, 12, 48);
   requestAnimationFrame(drawOverlay);
 }
 
