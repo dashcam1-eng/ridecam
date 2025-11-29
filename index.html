@@ -17,6 +17,7 @@ body {
   display:flex; justify-content:center; align-items:center;
   height:100vh; overflow:hidden;
   position:relative;
+  text-align:center;
 }
 
 /* Video behind UI */
@@ -33,6 +34,18 @@ canvas {
   top:0; left:0;
   z-index:2;
   pointer-events:none; /* allow touches through canvas */
+}
+
+/* Description text above Start button */
+#description {
+  position:absolute;
+  top:35%;
+  left:50%;
+  transform:translateX(-50%);
+  width:90%;
+  font-size:20px;
+  color:#fff;
+  z-index:3;
 }
 
 /* Start button */
@@ -84,6 +97,10 @@ button {
     padding:16px 22px;
     font-size:18px;
   }
+
+  #description {
+    font-size:16px;
+  }
 }
 
 /* Extra safety for very short screens */
@@ -97,7 +114,11 @@ button {
 
 <body>
 
+<div id="description">
+  This camera will save up to the last 5 minutes of video, press Start to begin.
+</div>
 <button id="startBtn" class="center-start">Start</button>
+
 <video id="preview" autoplay playsinline muted></video>
 
 <div id="controls" class="controls">
@@ -114,6 +135,7 @@ const startBtn = document.getElementById("startBtn");
 const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
+const description = document.getElementById("description");
 
 let mimeType = "";
 let drawing = false;
@@ -206,6 +228,7 @@ async function startRecording() {
     preview.srcObject = stream;
     preview.style.display = "block";
     startBtn.style.display = "none";
+    description.style.display = "none"; // hide description when recording
     controls.style.display = "flex";
     overlayCanvas.style.display = "block";
 
@@ -264,6 +287,7 @@ stopBtn.addEventListener("click", () => {
   preview.style.display = "none";
   controls.style.display = "none";
   startBtn.style.display = "block";
+  description.style.display = "block"; // show description again
 });
 </script>
 
