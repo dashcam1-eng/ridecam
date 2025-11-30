@@ -61,6 +61,7 @@ h1 { text-align:center; margin-top:10px; }
 #saveMP4 { background:#ff9800; color:white; }
 #saveGIF { background:#ffc107; color:#000; }
 #cancelFormat { background:#555; color:white; padding:10px 16px; font-size:18px; }
+#statusText { color:white; margin-top:10px; font-size:16px; }
 @media(max-width:480px){
   .controls button, button{ padding:10px 16px; font-size:14px; }
   #description{ font-size:18px; }
@@ -130,7 +131,7 @@ h1 { text-align:center; margin-top:10px; }
     <button id="saveGIF">GIF</button>
     <br><br>
     <button id="cancelFormat">Cancel</button>
-    <p id="statusText" style="color:white;"></p>
+    <p id="statusText"></p>
   </div>
 </div>
 
@@ -211,11 +212,12 @@ function drawOverlay(){
   ctx.fillText(dateText,centerX-ctx.measureText(dateText).width/2,yPos);
   ctx.fillText(speedText,centerX-ctx.measureText(speedText).width/2,yPos+baseFontSize+4);
   // watermark
-ctx.font=`${baseFontSize*4}px Arial`; 
-ctx.fillStyle="rgba(255,255,255,0.85)"; 
-ctx.textBaseline="bottom";
-const watermark="Ridecam.ca";
-ctx.fillText(watermark,overlayCanvas.width-ctx.measureText(watermark).width-20,overlayCanvas.height-20);
+  ctx.font=`${baseFontSize*4}px Arial`; 
+  ctx.fillStyle="rgba(255,255,255,0.85)"; 
+  ctx.textBaseline="bottom";
+  const watermark="Ridecam.ca";
+  ctx.fillText(watermark,overlayCanvas.width-ctx.measureText(watermark).width-20,overlayCanvas.height-20);
+  requestAnimationFrame(drawOverlay);
 }
 
 async function startRecording(){
@@ -270,40 +272,52 @@ saveWebM.onclick=()=>{
 
 /* ---------- SAVE MP4 ---------- */
 saveMP4.onclick=async()=>{
+  if(buffer.length===0){alert("No video recorded yet."); return;}
   statusText.innerText="Converting to MP4... Please wait";
-  const blob=new Blob(buffer,{type:mimeType});
-  const uint8=new Uint8Array(await blob.arrayBuffer());
-  const { createFFmpeg }=FFmpeg;
-  const ffmpeg=createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/ffmpeg-core.js', worker:true });
+  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = true;
   try{
+    const blob=new Blob(buffer,{type:mimeType});
+    const uint8=new Uint8Array(await blob.arrayBuffer());
+    const { createFFmpeg }=FFmpeg;
+    const ffmpeg=createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/ffmpeg-core.js', worker:true });
     await ffmpeg.load();
     ffmpeg.FS("writeFile","input.webm",uint8);
     await ffmpeg.run("-i","input.webm","-c:v","libx264","-preset","veryfast","-movflags","faststart","output.mp4");
     const data=ffmpeg.FS("readFile","output.mp4");
     const mp4Blob=new Blob([data.buffer],{type:"video/mp4"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(mp4Blob);
-    a.download=`dashcam_${new Date().toISOString()}.mp4`; a.click();
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(mp4Blob);
+    a.download=`dashcam_${new Date().toISOString()}.mp4`;
+    a.click();
   }catch(err){alert("MP4 Conversion Failed:\n"+err);}
-  popup.style.display="none"; statusText.innerText="";
+  statusText.innerText="";
+  popup.style.display="none";
+  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = false;
 };
 
 /* ---------- SAVE GIF ---------- */
 saveGIF.onclick=async()=>{
+  if(buffer.length===0){alert("No video recorded yet."); return;}
   statusText.innerText="Converting to GIF... Please wait";
-  const blob=new Blob(buffer,{type:mimeType});
-  const uint8=new Uint8Array(await blob.arrayBuffer());
-  const { createFFmpeg }=FFmpeg;
-  const ffmpeg=createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/ffmpeg-core.js', worker:true });
+  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = true;
   try{
+    const blob=new Blob(buffer,{type:mimeType});
+    const uint8=new Uint8Array(await blob.arrayBuffer());
+    const { createFFmpeg }=FFmpeg;
+    const ffmpeg=createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/ffmpeg-core.js', worker:true });
     await ffmpeg.load();
     ffmpeg.FS("writeFile","input.webm",uint8);
     await ffmpeg.run("-i","input.webm","-vf","fps=10,scale=480:-1:flags=lanczos","output.gif");
     const data=ffmpeg.FS("readFile","output.gif");
     const gifBlob=new Blob([data.buffer],{type:"image/gif"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(gifBlob);
-    a.download=`dashcam_${new Date().toISOString()}.gif`; a.click();
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(gifBlob);
+    a.download=`dashcam_${new Date().toISOString()}.gif`;
+    a.click();
   }catch(err){alert("GIF Conversion Failed:\n"+err);}
-  popup.style.display="none"; statusText.innerText="";
+  statusText.innerText="";
+  popup.style.display="none";
+  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = false;
 };
 
 /* ---------- STOP CAMERA ---------- */
