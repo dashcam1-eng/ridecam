@@ -11,7 +11,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<!-- FFmpeg for MP4 conversion -->
+<!-- FFmpeg for MP4 and GIF conversion -->
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 
 <style>
@@ -115,13 +115,11 @@ button {
   cursor:pointer;
 }
 
-/* ---------- MODIFIED START BUTTON (100% LARGER) ---------- */
 #startBtn {
   padding:36px 52px;
   font-size:44px;
 }
 
-/* ---------- CONTROLS (Save + Stop) 100% LARGER & MOVED UP) ---------- */
 .controls {
   position: absolute;
   bottom: 36%;
@@ -140,28 +138,6 @@ button {
 
 #saveBtn { background:#007bff; color:white; }
 #stopBtn { background:#dc3545; color:white; }
-
-/* OTHER PAGES */
-.page {
-  display:none;
-  padding:20px;
-  overflow-y:auto;
-  height:100%;
-}
-
-h1 {
-  text-align:center;
-  margin-top:10px;
-}
-
-.faq-item {
-  margin-bottom:20px;
-}
-
-.faq-item h3 {
-  margin-bottom:6px;
-  color:#0af;
-}
 
 /* POPUP */
 #formatPopup {
@@ -192,16 +168,9 @@ h1 {
 
 #saveWebM { background:#007bff; color:white; }
 #saveMP4 { background:#ff9800; color:white; }
+#saveGIF { background:#ff33cc; color:white; }
 #cancelFormat { background:#555; color:white; padding:10px 16px; font-size:18px; }
 
-/* MOBILE ADJUSTMENTS */
-@media(max-width:480px){
-  .controls button, button{
-    padding:10px 16px;
-    font-size:14px;
-  }
-  #description { font-size:18px; }
-}
 </style>
 </head>
 
@@ -247,13 +216,14 @@ h1 {
       </p>
     </div>
 
-     <div class="faq-item">
+    <div class="faq-item">
       <h3>What file format does it save in?</h3>
-      <p>The camera saves in Webmedia format which is the easiest, most reliable, and optimal in terms of size for this application. You can convert the file using online resources. There is an option to save it to MP4 offerred but it takes a while to save. Webmedia is the fastest format to save in. </p>
+      <p>The camera saves in Webmedia format. You can convert the file using MP4 or GIF option.</p>
     </div>
-      <div class="faq-item">
+
+    <div class="faq-item">
       <h3>What about IOS?</h3>
-      <p>Good question! You'll have to find a way to convert it to view it on IOS, but the file should be viewable on other browsers. Best of Luck! </p>
+      <p>iOS cannot play WebM, but MP4 export works.</p>
     </div>
 
     <div class="faq-item">
@@ -276,56 +246,6 @@ h1 {
       <p>No, the camera must stay active.</p>
     </div>
 
-    <div class="faq-item">
-      <h3>How am I doing?</h3>
-      <p>Great! Thanks for asking.</p>
-    </div>
-  </div>
-
-  <!-- ABOUT -->
-  <div id="aboutPage" class="page">
-    <h1>About RideCam.ca</h1>
-    <p>
-      Ridecam.ca lets you use your phone as a Dash Camera. For any inquiries, feedback, or just to say hi email us at ridecam.ca@gmail.com
-    </p>
-    <p>
-      100% free. No data collection.<br>
-      All video stays on your device.
-    </p>
-  </div>
-
-  <!-- LEGAL -->
-  <div id="legalPage" class="page">
-    <h1>Legal Notice</h1>
-    <h3>Safe Use</h3>
-    <p>
-      • Only use the camera when safe.<br>
-      • Never interact while driving.<br>
-      • Follow all laws.
-    </p>
-
-    <h3>No Liability</h3>
-    <p>Use at your own risk.</p>
-
-    <h3>No Warranty</h3>
-    <p>Provided “as-is”.</p>
-  </div>
-
-  <!-- DONATIONS -->
-  <div id="donationsPage" class="page">
-    <h1>Support RideCam</h1>
-    <p>
-      RideCam.ca is 100% free and has no ads.<br>
-      You can donate below if you'd like to support development.
-    </p>
-
-    <script async src="https://js.stripe.com/v3/buy-button.js"></script>
-
-<stripe-buy-button
-  buy-button-id="buy_btn_1SYtSBLRKVOKcZZ1gFQfvk3V"
-  publishable-key="pk_live_6At8Xa6cO7izid0cDO3u8GfH"
->
-</stripe-buy-button>
   </div>
 
 </div>
@@ -336,26 +256,21 @@ h1 {
     <h3 style="margin-top:0;color:#fff;">Save Video As:</h3>
     <button id="saveWebM">WebM</button>
     <button id="saveMP4">MP4</button>
+    <button id="saveGIF">GIF</button>
     <br><br>
     <button id="cancelFormat">Cancel</button>
   </div>
 </div>
 
 <script>
-/* ---------- PAGE NAVIGATION ---------- */
+/* ---------- Navigation ---------- */
 const pages = {
   dashcam: document.getElementById("dashcamPage"),
-  faq: document.getElementById("faqPage"),
-  about: document.getElementById("aboutPage"),
-  legal: document.getElementById("legalPage"),
-  donations: document.getElementById("donationsPage")
+  faq: document.getElementById("faqPage")
 };
 const navButtons = {
   dashcam: document.getElementById("navDashcam"),
-  faq: document.getElementById("navFAQ"),
-  about: document.getElementById("navAbout"),
-  legal: document.getElementById("navLegal"),
-  donations: document.getElementById("navDonations")
+  faq: document.getElementById("navFAQ")
 };
 
 function showPage(page) {
@@ -366,13 +281,7 @@ function showPage(page) {
   if (page !== "dashcam") stopCamera();
 }
 
-navButtons.dashcam.onclick = () => showPage("dashcam");
-navButtons.faq.onclick = () => showPage("faq");
-navButtons.about.onclick = () => showPage("about");
-navButtons.legal.onclick = () => showPage("legal");
-navButtons.donations.onclick = () => showPage("donations");
-
-/* ---------- DASHCAM FUNCTIONALITY ---------- */
+/* ---------- Dashcam ---------- */
 let stream, recorder;
 let buffer = [];
 const maxChunks = 60;
@@ -381,8 +290,8 @@ const startBtn = document.getElementById("startBtn");
 const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
-const description = document.getElementById("description");
 
+/* Overlay canvas */
 let mimeType = "";
 let drawing = false;
 
@@ -391,76 +300,35 @@ overlayCanvas.style.display = "none";
 document.body.appendChild(overlayCanvas);
 const ctx = overlayCanvas.getContext("2d");
 
-/* ---------- CANVAS RESIZE ---------- */
 function resizeCanvas() {
   const rect = preview.getBoundingClientRect();
-  const width = rect.width || window.innerWidth;
-  const height = rect.height || (window.innerHeight - 60);
-  overlayCanvas.width = width;
-  overlayCanvas.height = height;
+  overlayCanvas.width = rect.width || window.innerWidth;
+  overlayCanvas.height = rect.height || (window.innerHeight - 60);
   overlayCanvas.style.left = rect.left + "px";
   overlayCanvas.style.top = rect.top + "px";
-  overlayCanvas.style.width = width + "px";
-  overlayCanvas.style.height = height + "px";
 }
 
 preview.addEventListener("loadedmetadata", () => setTimeout(resizeCanvas, 120));
 window.addEventListener("resize", () => setTimeout(resizeCanvas, 120));
-window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 250));
 
-/* ---------- DRAW OVERLAY ---------- */
 let speedKmh = 0;
 
 function drawOverlay() {
   if (!drawing) return;
-
   ctx.clearRect(0,0,overlayCanvas.width, overlayCanvas.height);
   ctx.drawImage(preview, 0, 0, overlayCanvas.width, overlayCanvas.height);
 
-  const topMenuHeight = 60;
-  const safeTop = parseInt(getComputedStyle(document.documentElement)
-                     .getPropertyValue("env(safe-area-inset-top)")) || 0;
-
-  const bottomControlsHeight = overlayCanvas.height * 0.36 + 50; 
-
-  const baseFontSize = Math.max(16, overlayCanvas.width * 0.04) * 0.5;
-  ctx.font = `${baseFontSize}px Arial`;
+  ctx.font = "20px Arial";
   ctx.fillStyle = "yellow";
-  ctx.textBaseline = "top";
-
-  const dateText = new Date().toLocaleString();
-  const speedText = `Speed: ${speedKmh.toFixed(1)} km/h`;
-
-  const dateWidth = ctx.measureText(dateText).width;
-  const speedWidth = ctx.measureText(speedText).width;
-  const centerX = overlayCanvas.width / 2;
-
-  const minY = topMenuHeight + safeTop + 10;
-  const maxY = overlayCanvas.height - bottomControlsHeight - baseFontSize*2 - 10;
-  const yPos = Math.min(minY, maxY);
-
-  ctx.fillText(dateText, centerX - dateWidth/2, yPos);
-  ctx.fillText(speedText, centerX - speedWidth/2, yPos + baseFontSize + 4);
-
-  /* ---------- WATERMARK ---------- */
-  ctx.font = `${baseFontSize * 0.8}px Arial`;
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.textBaseline = "bottom";
-
-  const watermark = "Ridecam.ca";
-  const wmWidth = ctx.measureText(watermark).width;
-  const wmX = overlayCanvas.width - wmWidth - 20;
-  const wmY = overlayCanvas.height - 20;
-
-  ctx.fillText(watermark, wmX, wmY);
+  ctx.fillText(new Date().toLocaleString(), 20, 20);
+  ctx.fillText(`Speed: ${speedKmh.toFixed(1)} km/h`, 20, 50);
 
   requestAnimationFrame(drawOverlay);
 }
 
-/* ---------- START RECORDING ---------- */
 async function startRecording() {
   try {
-    mimeType = pickMimeType();
+    mimeType = "video/webm";
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode:"environment" },
       audio: false
@@ -469,10 +337,8 @@ async function startRecording() {
     preview.srcObject = stream;
     preview.style.display = "block";
     startBtn.style.display = "none";
-    description.style.display = "none";
     controls.style.display = "flex";
     overlayCanvas.style.display = "block";
-    setTimeout(resizeCanvas, 200);
 
     drawing = true;
     drawOverlay();
@@ -492,65 +358,50 @@ async function startRecording() {
 
     recorder.start(500);
   } catch (err) {
-    alert("Camera access failed. Try tapping Start again.\n" + err);
+    alert("Camera error: " + err);
   }
 }
 
-function pickMimeType() {
-  const options = [
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
-    "video/mp4"
-  ];
-  for (let type of options) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
-  }
-  return "video/webm";
-}
+startBtn.onclick = startRecording;
 
-startBtn.addEventListener("click", startRecording);
-
-/* ---------- SAVE VIDEO: POPUP OPTIONS ---------- */
+/* ---------- Save Video → Popup ---------- */
 const popup = document.getElementById("formatPopup");
 const saveWebM = document.getElementById("saveWebM");
 const saveMP4 = document.getElementById("saveMP4");
+const saveGIF = document.getElementById("saveGIF");
 const cancelFormat = document.getElementById("cancelFormat");
+const box = popup.querySelector(".box");
 
-saveBtn.addEventListener("click", () => {
-  if (buffer.length === 0) {
-    alert("No video recorded yet.");
-    return;
-  }
+saveBtn.onclick = () => {
+  if (buffer.length === 0) return alert("No video yet.");
   popup.style.display = "flex";
-});
+};
 
 cancelFormat.onclick = () => popup.style.display = "none";
 
-/* ---------- SAVE AS WEBM ---------- */
+/* ---------- Save WebM ---------- */
 saveWebM.onclick = () => {
   const blob = new Blob(buffer, { type: mimeType });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = `dashcam_${new Date().toISOString()}.webm`;
   a.click();
   popup.style.display = "none";
 };
 
-/* ---------- SAVE AS MP4 (FFmpeg Conversion) ---------- */
+/* ---------- Save MP4 ---------- */
 saveMP4.onclick = async () => {
-  popup.querySelector(".box").innerHTML = "<h3 style='color:white;'>Converting to MP4... Please wait</h3>";
+  const original = box.innerHTML;
+  box.innerHTML = "<h3 style='color:white;'>Converting to MP4... Please wait</h3>";
 
   const blob = new Blob(buffer, { type: mimeType });
   const uint8 = new Uint8Array(await blob.arrayBuffer());
 
-  const { createFFmpeg, fetchFile } = FFmpeg;
+  const { createFFmpeg } = FFmpeg;
   const ffmpeg = createFFmpeg({ log: false });
 
   try {
     await ffmpeg.load();
-
     ffmpeg.FS("writeFile", "input.webm", uint8);
 
     await ffmpeg.run(
@@ -563,20 +414,62 @@ saveMP4.onclick = async () => {
 
     const data = ffmpeg.FS("readFile", "output.mp4");
     const mp4Blob = new Blob([data.buffer], { type: "video/mp4" });
-    const url = URL.createObjectURL(mp4Blob);
-
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(mp4Blob);
     a.download = `dashcam_${new Date().toISOString()}.mp4`;
     a.click();
   } catch (err) {
-    alert("MP4 Conversion Failed:\n" + err);
+    alert("MP4 conversion failed.");
   }
 
+  box.innerHTML = original;
   popup.style.display = "none";
 };
 
-/* ---------- STOP CAMERA ---------- */
+/* ---------- Save GIF ---------- */
+saveGIF.onclick = async () => {
+  const original = box.innerHTML;
+  box.innerHTML = "<h3 style='color:white;'>Converting to GIF... Please wait</h3>";
+
+  const blob = new Blob(buffer, { type: mimeType });
+  const uint8 = new Uint8Array(await blob.arrayBuffer());
+
+  const { createFFmpeg } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: false });
+
+  try {
+    await ffmpeg.load();
+    ffmpeg.FS("writeFile", "input.webm", uint8);
+
+    // Create palette for high quality GIF
+    await ffmpeg.run(
+      "-i", "input.webm",
+      "-vf", "fps=10,scale=iw:-1:flags=lanczos,palettegen",
+      "palette.png"
+    );
+
+    await ffmpeg.run(
+      "-i", "input.webm",
+      "-i", "palette.png",
+      "-lavfi", "fps=10,scale=iw:-1:flags=lanczos[p];[p][1:v]paletteuse",
+      "output.gif"
+    );
+
+    const data = ffmpeg.FS("readFile", "output.gif");
+    const gifBlob = new Blob([data.buffer], { type: "image/gif" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(gifBlob);
+    a.download = `dashcam_${new Date().toISOString()}.gif`;
+    a.click();
+  } catch (err) {
+    alert("GIF conversion failed.");
+  }
+
+  box.innerHTML = original;
+  popup.style.display = "none";
+};
+
+/* ---------- Stop ---------- */
 function stopCamera() {
   drawing = false;
   overlayCanvas.style.display = "none";
@@ -585,12 +478,10 @@ function stopCamera() {
   preview.style.display = "none";
   controls.style.display = "none";
   startBtn.style.display = "block";
-  description.style.display = "block";
 }
 
-stopBtn.addEventListener("click", stopCamera);
+stopBtn.onclick = stopCamera;
 
 </script>
-
 </body>
 </html>
