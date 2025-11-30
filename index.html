@@ -11,6 +11,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
+<!-- FFmpeg for MP4 conversion -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+
 <style>
 body {
   margin:0; background:#000; color:#fff; font-family:Arial;
@@ -160,6 +163,37 @@ h1 {
   color:#0af;
 }
 
+/* POPUP */
+#formatPopup {
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.75);
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+}
+#formatPopup .box {
+  background:#222;
+  padding:25px;
+  border-radius:15px;
+  text-align:center;
+  width:80%;
+  max-width:350px;
+}
+
+#formatPopup button {
+  margin:10px;
+  padding:15px 25px;
+  font-size:22px;
+  border-radius:10px;
+}
+
+#saveWebM { background:#007bff; color:white; }
+#saveMP4 { background:#ff9800; color:white; }
+#cancelFormat { background:#555; color:white; padding:10px 16px; font-size:18px; }
+
 /* MOBILE ADJUSTMENTS */
 @media(max-width:480px){
   .controls button, button{
@@ -294,6 +328,17 @@ h1 {
 </stripe-buy-button>
   </div>
 
+</div>
+
+<!-- POPUP FOR SAVE FORMAT -->
+<div id="formatPopup">
+  <div class="box">
+    <h3 style="margin-top:0;color:#fff;">Save Video As:</h3>
+    <button id="saveWebM">WebM</button>
+    <button id="saveMP4">MP4</button>
+    <br><br>
+    <button id="cancelFormat">Cancel</button>
+  </div>
 </div>
 
 <script>
@@ -466,20 +511,70 @@ function pickMimeType() {
 
 startBtn.addEventListener("click", startRecording);
 
-/* ---------- SAVE VIDEO ---------- */
+/* ---------- SAVE VIDEO: POPUP OPTIONS ---------- */
+const popup = document.getElementById("formatPopup");
+const saveWebM = document.getElementById("saveWebM");
+const saveMP4 = document.getElementById("saveMP4");
+const cancelFormat = document.getElementById("cancelFormat");
+
 saveBtn.addEventListener("click", () => {
   if (buffer.length === 0) {
     alert("No video recorded yet.");
     return;
   }
+  popup.style.display = "flex";
+});
+
+cancelFormat.onclick = () => popup.style.display = "none";
+
+/* ---------- SAVE AS WEBM ---------- */
+saveWebM.onclick = () => {
   const blob = new Blob(buffer, { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
-  a.download = `dashcam_${new Date().toISOString()}.${ext}`;
+  a.download = `dashcam_${new Date().toISOString()}.webm`;
   a.click();
-});
+  popup.style.display = "none";
+};
+
+/* ---------- SAVE AS MP4 (FFmpeg Conversion) ---------- */
+saveMP4.onclick = async () => {
+  popup.querySelector(".box").innerHTML = "<h3 style='color:white;'>Converting to MP4... Please wait</h3>";
+
+  const blob = new Blob(buffer, { type: mimeType });
+  const uint8 = new Uint8Array(await blob.arrayBuffer());
+
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({ log: false });
+
+  try {
+    await ffmpeg.load();
+
+    ffmpeg.FS("writeFile", "input.webm", uint8);
+
+    await ffmpeg.run(
+      "-i", "input.webm",
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-movflags", "faststart",
+      "output.mp4"
+    );
+
+    const data = ffmpeg.FS("readFile", "output.mp4");
+    const mp4Blob = new Blob([data.buffer], { type: "video/mp4" });
+    const url = URL.createObjectURL(mp4Blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dashcam_${new Date().toISOString()}.mp4`;
+    a.click();
+  } catch (err) {
+    alert("MP4 Conversion Failed:\n" + err);
+  }
+
+  popup.style.display = "none";
+};
 
 /* ---------- STOP CAMERA ---------- */
 function stopCamera() {
