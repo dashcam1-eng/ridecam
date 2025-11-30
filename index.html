@@ -211,10 +211,11 @@ function drawOverlay(){
   ctx.fillText(dateText,centerX-ctx.measureText(dateText).width/2,yPos);
   ctx.fillText(speedText,centerX-ctx.measureText(speedText).width/2,yPos+baseFontSize+4);
   // watermark
-  ctx.font=`${baseFontSize*0.8}px Arial`; ctx.fillStyle="rgba(255,255,255,0.85)"; ctx.textBaseline="bottom";
-  const watermark="Ridecam.ca";
-  ctx.fillText(watermark,overlayCanvas.width-ctx.measureText(watermark).width-20,overlayCanvas.height-20);
-  requestAnimationFrame(drawOverlay);
+ctx.font=`${baseFontSize*4}px Arial`; 
+ctx.fillStyle="rgba(255,255,255,0.85)"; 
+ctx.textBaseline="bottom";
+const watermark="Ridecam.ca";
+ctx.fillText(watermark,overlayCanvas.width-ctx.measureText(watermark).width-20,overlayCanvas.height-20);
 }
 
 async function startRecording(){
