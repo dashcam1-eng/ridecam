@@ -3,37 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <title>RideCam - Turn your Phone into a Dash Camera</title>
 <meta name="description" content="Turn your Phone into a Dash Cam">
+
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
 <style>
-body {margin:0; background:#000; color:#fff; font-family:Arial; height:100vh; overflow:hidden; position:relative;}
-nav {width:100%; background:#111; padding:12px; text-align:center; position:fixed; top:0; left:0; z-index:5;}
-nav button {background:#222; border:1px solid #444; padding:10px 16px; color:white; margin:0 6px; border-radius:8px; font-size:18px; cursor:pointer;}
-nav button.active {background:#007bff;}
-#appPages {position:absolute; top:60px; left:0; width:100%; height:calc(100vh - 60px); overflow:hidden;}
-.page {display:none; padding:20px; overflow-y:auto; height:100%;}
-#dashcamPage {width:100%; height:100%; position:relative; display:flex; justify-content:center; align-items:center; text-align:center; overflow:hidden;}
-#preview {position:absolute; top:0; left:0; width:100%; height:100%; display:none; background:#111; z-index:1; object-fit:cover;}
-canvas {position:absolute; top:0; left:0; z-index:2; pointer-events:none;}
-#description {position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:85%; font-size:22px; text-align:center; z-index:3; line-height:1.4em;}
-.center-start {position:absolute; top:65%; left:50%; transform:translate(-50%, -50%); z-index:3;}
-button {padding:18px 26px; font-size:22px; border:none; border-radius:12px; background:#28a745; color:#fff; cursor:pointer;}
-#startBtn {padding:36px 52px; font-size:44px;}
-.controls {position:absolute; bottom:36%; left:50%; transform:translateX(-50%); display:none; gap:16px; z-index:4;}
-.controls button {padding:28px 44px; font-size:clamp(28px,8vw,40px); border-radius:16px;}
-#saveBtn {background:#007bff; color:white;}
-#stopBtn {background:#dc3545; color:white;}
-#saveNotice {display:none; position:absolute; top:20%; width:100%; text-align:center; color:#fff; font-size:24px; z-index:999; text-shadow:0 0 8px #000;}
+body {
+  margin:0; background:#000; color:#fff; font-family:Arial;
+  height:100vh; overflow:hidden;
+  position:relative;
+}
+
+/* NAVIGATION */
+nav {
+  width:100%;
+  background:#111;
+  padding:12px;
+  text-align:center;
+  position:fixed;
+  top:0; left:0;
+  z-index:5;
+}
+nav button {
+  background:#222;
+  border:1px solid #444;
+  padding:10px 16px;
+  color:white;
+  margin:0 6px;
+  border-radius:8px;
+  font-size:18px;
+  cursor:pointer;
+}
+nav button.active {
+  background:#007bff;
+}
+
+/* MAIN WRAPPER */
+#appPages {
+  position:absolute;
+  top:60px;
+  left:0;
+  width:100%;
+  height:calc(100vh - 60px);
+  overflow:hidden;
+}
+
+/* DASHCAM PAGE */
+#dashcamPage {
+  width:100%;
+  height:100%;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  overflow:hidden;
+}
+
+#preview {
+  position:absolute;
+  top:0; left:0;
+  width:100%; height:100%;
+  display:none;
+  background:#111;
+  z-index:1;
+  object-fit:cover;
+}
+
+canvas {
+  position: absolute;
+  top:0;
+  left:0;
+  z-index:2;
+  pointer-events:none;
+}
+
+#description {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  width:85%;
+  font-size:22px;
+  text-align:center;
+  z-index:3;
+  line-height:1.4em;
+}
+
+.center-start {
+  position:absolute;
+  top:65%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  z-index:3;
+}
+
+button {
+  padding:18px 26px;
+  font-size:22px;
+  border:none;
+  border-radius:12px;
+  background:#28a745;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* ---------- MODIFIED START BUTTON (100% LARGER) ---------- */
+#startBtn {
+  padding:36px 52px;
+  font-size:44px;
+}
+
+/* ---------- CONTROLS (Save + Stop) 100% LARGER & MOVED UP) ---------- */
+.controls {
+  position: absolute;
+  bottom: 36%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 16px;
+  z-index: 4;
+}
+
+.controls button {
+  padding:28px 44px;
+  font-size:clamp(28px, 8vw, 40px);
+  border-radius:16px;
+}
+
+#saveBtn { background:#007bff; color:white; }
+#stopBtn { background:#dc3545; color:white; }
+
+/* OTHER PAGES */
+.page {
+  display:none;
+  padding:20px;
+  overflow-y:auto;
+  height:100%;
+}
+
+h1 {
+  text-align:center;
+  margin-top:10px;
+}
+
+.faq-item {
+  margin-bottom:20px;
+}
+
+.faq-item h3 {
+  margin-bottom:6px;
+  color:#0af;
+}
+
+/* MOBILE ADJUSTMENTS */
 @media(max-width:480px){
-  .controls button, button{padding:10px 16px; font-size:14px;}
-  #description{font-size:18px;}
+  .controls button, button{
+    padding:10px 16px;
+    font-size:14px;
+  }
+  #description { font-size:18px; }
 }
 </style>
 </head>
+
 <body>
 
 <!-- NAV BAR -->
@@ -55,16 +192,18 @@ button {padding:18px 26px; font-size:22px; border:none; border-radius:12px; back
     </div>
 
     <button id="startBtn" class="center-start">Start</button>
-    <video id="preview" autoplay playsinline muted></video>
-    <canvas id="overlayCanvas"></canvas>
 
-    <div id="saveNotice">
-      Saving… recording 20 more seconds. Press Stop to finish early.
+    <video id="preview" autoplay playsinline muted></video>
+
+    <div id="saveNotice" 
+         style="display:none; position:absolute; top:20%; width:100%; text-align:center;
+                color:#fff; font-size:24px; z-index:999; text-shadow:0 0 8px #000;">
+      Saving… recording 20 more seconds. Press STOP to finish early.
     </div>
 
-    <div class="controls">
-      <button id="saveBtn">Save Video</button>
-      <button id="stopBtn">Stop</button>
+    <div id="controls" class="controls">
+      <button id="saveBtn" class="control-btn">Save Video</button>
+      <button id="stopBtn" class="control-btn">Stop</button>
     </div>
   </div>
 
@@ -79,30 +218,36 @@ button {padding:18px 26px; font-size:22px; border:none; border-radius:12px; back
         When something happens, press <b>Save Video</b>.
       </p>
     </div>
-    <div class="faq-item">
+
+     <div class="faq-item">
       <h3>What file format does it save in?</h3>
-      <p>The camera saves in Webmedia format. You can convert the file using online resources.</p>
+      <p>The camera saves in Webmedia format which is the easiest, most reliable, and optimal in terms of size for this application. You can convert the file using online resources. </p>
     </div>
-    <div class="faq-item">
+      <div class="faq-item">
       <h3>What about IOS?</h3>
-      <p>You'll need to convert it for IOS, but other browsers will play it.</p>
+      <p>Good question! You'll have to find a way to convert it to view it on IOS, but the file should be viewable on other browsers. Best of Luck! </p>
     </div>
+
     <div class="faq-item">
       <h3>Why do you need camera access?</h3>
       <p>To function as a dash cam, camera access is required.</p>
     </div>
+
     <div class="faq-item">
       <h3>Do you store anything?</h3>
       <p>No. Everything stays on your device.</p>
     </div>
+
     <div class="faq-item">
       <h3>Why location access?</h3>
       <p>It’s used to calculate driving speed.</p>
     </div>
+
     <div class="faq-item">
       <h3>Screen off?</h3>
       <p>No, the camera must stay active.</p>
     </div>
+
     <div class="faq-item">
       <h3>How am I doing?</h3>
       <p>Great! Thanks for asking.</p>
@@ -113,21 +258,40 @@ button {padding:18px 26px; font-size:22px; border:none; border-radius:12px; back
   <div id="aboutPage" class="page">
     <h1>About RideCam.ca</h1>
     <p>
-      Ridecam.ca lets you use your phone as a Dash Camera. For inquiries, email ridecam.ca@gmail.com
+      Ridecam.ca lets you use your phone as a Dash Camera. For any inquiries, feedback, or just to say hi email us at ridecam.ca@gmail.com
     </p>
-    <p>100% free. No data collection.<br>All video stays on your device.</p>
+    <p>
+      100% free. No data collection.<br>
+      All video stays on your device.
+    </p>
   </div>
 
   <!-- LEGAL -->
   <div id="legalPage" class="page">
     <h1>Legal Notice</h1>
-    <p>Legal & Liability Notice: RideCam provides general information and tools for personal dashcam use. All recordings, storage, and use of video captured through this site are the sole responsibility of the user. Use at your own risk.</p>
+    <p>Legal & Liability Notice: RideCam provides general information and tools for personal dashcam use. All recordings, storage, and use of video captured through this site are the sole responsibility of the user. You are responsible for complying with all local, provincial/state, and federal laws regarding privacy, data collection, and the use of recording devices. RideCam makes no guarantees regarding the accuracy, reliability, or legality of recordings made using our service and is not liable for any damages, losses, or legal issues arising from the use or misuse of the dashcam features.
+Use of this site constitutes acceptance of these terms.</p>
+    <h3>Safe Use</h3>
+    <p>
+      • Only use the camera when safe.<br>
+      • Never interact while driving.<br>
+      • Follow all laws.
+    </p>
+
+    <h3>No Liability</h3>
+    <p>Use at your own risk.</p>
+
+    <h3>No Warranty</h3>
+    <p>Provided “as-is”.</p>
   </div>
 
   <!-- DONATIONS -->
   <div id="donationsPage" class="page">
     <h1>Support RideCam</h1>
-    <p>RideCam.ca is 100% free and has no ads. You can donate below to support development.</p>
+    <p>
+      RideCam.ca is 100% free and has no ads.<br>
+      You can donate below if you'd like to support development.
+    </p>
   </div>
 
 </div>
@@ -149,159 +313,188 @@ const navButtons = {
   donations: document.getElementById("navDonations")
 };
 
-function showPage(page){
-  Object.values(pages).forEach(p=>p.style.display="none");
-  Object.values(navButtons).forEach(b=>b.classList.remove("active"));
-  pages[page].style.display="block";
+function showPage(page) {
+  Object.values(pages).forEach(p => p.style.display = "none");
+  Object.values(navButtons).forEach(b => b.classList.remove("active"));
+  pages[page].style.display = "block";
   navButtons[page].classList.add("active");
-  if(page!=="dashcam") stopCamera();
+  if (page !== "dashcam") stopCamera();
 }
 
-navButtons.dashcam.onclick = ()=>showPage("dashcam");
-navButtons.faq.onclick = ()=>showPage("faq");
-navButtons.about.onclick = ()=>showPage("about");
-navButtons.legal.onclick = ()=>showPage("legal");
-navButtons.donations.onclick = ()=>showPage("donations");
+navButtons.dashcam.onclick = () => showPage("dashcam");
+navButtons.faq.onclick = () => showPage("faq");
+navButtons.about.onclick = () => showPage("about");
+navButtons.legal.onclick = () => showPage("legal");
+navButtons.donations.onclick = () => showPage("donations");
 
 /* ---------- DASHCAM FUNCTIONALITY ---------- */
 let stream, recorder;
-let buffer=[];
-const maxChunks=60;
+let buffer = [];
+const maxChunks = 60;
 const preview = document.getElementById("preview");
-const startBtn=document.getElementById("startBtn");
-const controls=document.querySelector(".controls");
-const saveBtn=document.getElementById("saveBtn");
-const stopBtn=document.getElementById("stopBtn");
-const description=document.getElementById("description");
-const saveNotice=document.getElementById("saveNotice");
-const overlayCanvas=document.getElementById("overlayCanvas");
-const ctx=overlayCanvas.getContext("2d");
+const startBtn = document.getElementById("startBtn");
+const controls = document.getElementById("controls");
+const saveBtn = document.getElementById("saveBtn");
+const stopBtn = document.getElementById("stopBtn");
+const description = document.getElementById("description");
+const saveNotice = document.getElementById("saveNotice");
 
-let mimeType="";
-let drawing=false;
-let extendedRecording=false;
-let saveTimeout=null;
-let stopPressCount=0;
-let speedKmh = 0; // placeholder for speed overlay
+let mimeType = "";
+let drawing = false;
 
-/* ---------- CANVAS ---------- */
-function resizeCanvas(){
-  overlayCanvas.width=preview.clientWidth;
-  overlayCanvas.height=preview.clientHeight;
+/* ---------- STATE VARIABLES ---------- */
+let extendedRecording = false;
+let saveTimeout = null;
+
+const overlayCanvas = document.createElement("canvas");
+overlayCanvas.style.display = "none";
+document.body.appendChild(overlayCanvas);
+const ctx = overlayCanvas.getContext("2d");
+
+/* ---------- CANVAS RESIZE ---------- */
+function resizeCanvas() {
+  const rect = preview.getBoundingClientRect();
+  const width = rect.width || window.innerWidth;
+  const height = rect.height || (window.innerHeight - 60);
+  overlayCanvas.width = width;
+  overlayCanvas.height = height;
+  overlayCanvas.style.left = rect.left + "px";
+  overlayCanvas.style.top = rect.top + "px";
+  overlayCanvas.style.width = width + "px";
+  overlayCanvas.style.height = height + "px";
 }
-preview.addEventListener("loadedmetadata", ()=>setTimeout(resizeCanvas,120));
-window.addEventListener("resize", ()=>setTimeout(resizeCanvas,120));
-window.addEventListener("orientationchange", ()=>setTimeout(resizeCanvas,250));
+
+preview.addEventListener("loadedmetadata", () => setTimeout(resizeCanvas, 120));
+window.addEventListener("resize", () => setTimeout(resizeCanvas, 120));
+window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 250));
 
 /* ---------- DRAW OVERLAY ---------- */
-function drawOverlay(){
-  if(!drawing) return;
-  ctx.clearRect(0,0,overlayCanvas.width, overlayCanvas.height);
-  ctx.drawImage(preview,0,0,overlayCanvas.width, overlayCanvas.height);
+let speedKmh = 0;
 
-  const baseFontSize = Math.max(16, overlayCanvas.width*0.04);
+function drawOverlay() {
+  if (!drawing) return;
+
+  ctx.clearRect(0,0,overlayCanvas.width, overlayCanvas.height);
+  ctx.drawImage(preview, 0, 0, overlayCanvas.width, overlayCanvas.height);
+
+  const topMenuHeight = 60;
+  const safeTop = parseInt(getComputedStyle(document.documentElement)
+                     .getPropertyValue("env(safe-area-inset-top)")) || 0;
+
+  const bottomControlsHeight = overlayCanvas.height * 0.36 + 50; 
+
+  const baseFontSize = Math.max(16, overlayCanvas.width * 0.04) * 0.5;
   ctx.font = `${baseFontSize}px Arial`;
   ctx.fillStyle = "yellow";
   ctx.textBaseline = "top";
 
   const dateText = new Date().toLocaleString();
   const speedText = `Speed: ${speedKmh.toFixed(1)} km/h`;
-  const centerX = overlayCanvas.width/2;
+
   const dateWidth = ctx.measureText(dateText).width;
   const speedWidth = ctx.measureText(speedText).width;
+  const centerX = overlayCanvas.width / 2;
 
-  ctx.fillText(dateText, centerX - dateWidth/2, 10);
-  ctx.fillText(speedText, centerX - speedWidth/2, 10 + baseFontSize + 4);
+  const minY = topMenuHeight + safeTop + 10;
+  const maxY = overlayCanvas.height - bottomControlsHeight - baseFontSize*2 - 10;
+  const yPos = Math.min(minY, maxY);
 
-  // WATERMARK
+  ctx.fillText(dateText, centerX - dateWidth/2, yPos);
+  ctx.fillText(speedText, centerX - speedWidth/2, yPos + baseFontSize + 4);
+
+  /* WATERMARK */
   ctx.font = `${baseFontSize * 1.6}px Arial`;
   ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.textBaseline="bottom";
-  const watermark="RideCam.ca";
-  const wmWidth=ctx.measureText(watermark).width;
-  const wmX=(overlayCanvas.width/2)-(wmWidth/2);
-  const wmY=overlayCanvas.height-40;
+  ctx.textBaseline = "bottom";
+  const watermark = "Ridecam.ca";
+  const wmWidth = ctx.measureText(watermark).width;
+  const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
+  const wmY = overlayCanvas.height - 40;
   ctx.fillText(watermark, wmX, wmY);
 
   requestAnimationFrame(drawOverlay);
 }
 
 /* ---------- START RECORDING ---------- */
-async function startRecording(){
-  try{
-    mimeType=pickMimeType();
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
-    preview.srcObject=stream;
+async function startRecording() {
+  try {
+    mimeType = pickMimeType();
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    preview.srcObject = stream;
     preview.style.display="block";
     startBtn.style.display="none";
     description.style.display="none";
     controls.style.display="flex";
     overlayCanvas.style.display="block";
-    resizeCanvas();
-    drawing=true;
+    setTimeout(resizeCanvas,200);
+
+    drawing = true;
     drawOverlay();
 
-    const combinedStream=overlayCanvas.captureStream(30);
+    const combinedStream = overlayCanvas.captureStream(30);
     stream.getTracks().forEach(t=>combinedStream.addTrack(t));
 
-    buffer=[];
-    recorder=new MediaRecorder(combinedStream,{mimeType});
+    buffer = [];
+    recorder = new MediaRecorder(combinedStream,{mimeType});
+
     recorder.ondataavailable=(e)=>{
       if(e.data.size>0){
         buffer.push(e.data);
         if(buffer.length>maxChunks) buffer.shift();
       }
     };
+
     recorder.start(500);
-  }catch(err){alert("Camera access failed.\n"+err);}
+  }catch(err){alert("Camera access failed. Try again.\n"+err);}
 }
 
 function pickMimeType(){
   const options=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm","video/mp4"];
-  for(let t of options) if(MediaRecorder.isTypeSupported(t)) return t;
+  for(let type of options) if(MediaRecorder.isTypeSupported(type)) return type;
   return "video/webm";
 }
-startBtn.addEventListener("click", startRecording);
+
+startBtn.addEventListener("click",startRecording);
 
 /* ---------- SAVE VIDEO ---------- */
-saveBtn.addEventListener("click", ()=>{
-  if(!recorder||buffer.length===0){alert("No video recorded yet."); return;}
+saveBtn.addEventListener("click",()=>{
+  if(!recorder||buffer.length===0){alert("No video recorded yet.");return;}
   if(saveTimeout) clearTimeout(saveTimeout);
 
-  extendedRecording=true;
   saveNotice.style.display="block";
+  extendedRecording=true;
 
-  saveTimeout=setTimeout(()=>{
+  // Auto-save after 20s if user does not stop
+  saveTimeout = setTimeout(()=>{
     saveVideoBlob();
     extendedRecording=false;
     saveNotice.style.display="none";
-    stopPressCount=1;
   },20000);
 });
 
 function saveVideoBlob(){
   if(!buffer.length) return;
-  const blob=new Blob(buffer,{type:mimeType});
-  const a=document.createElement("a");
-  let ext=mimeType.includes("mp4")?"mp4":"webm";
+  const blob = new Blob(buffer,{type:mimeType});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  let ext = mimeType.includes("mp4")?"mp4":"webm";
   a.download=`dashcam_${new Date().toISOString()}.${ext}`;
-  a.href=URL.createObjectURL(blob);
+  a.href=url;
   a.click();
 }
 
-/* ---------- STOP BUTTON ---------- */
-stopBtn.addEventListener("click", ()=>{
+/* ---------- STOP BUTTON FIXED ---------- */
+stopBtn.addEventListener("click",()=>{
   if(extendedRecording){
+    // Stop extended recording but remain on Save/Stop screen
     if(saveTimeout){clearTimeout(saveTimeout); saveTimeout=null;}
     saveVideoBlob();
     extendedRecording=false;
     saveNotice.style.display="none";
-    stopPressCount=1;
-  } else if(stopPressCount===1){
-    stopCamera();
-    stopPressCount=0;
+    // stay on Save/Stop screen
   } else {
-    stopPressCount=1;
+    // Stop camera and revert to Start screen
+    stopCamera();
   }
 });
 
@@ -311,6 +504,7 @@ function stopCamera(){
   if(saveTimeout){clearTimeout(saveTimeout); saveTimeout=null;}
   if(recorder) recorder.stop();
   if(stream) stream.getTracks().forEach(t=>t.stop());
+
   preview.style.display="none";
   controls.style.display="none";
   startBtn.style.display="block";
