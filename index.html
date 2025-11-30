@@ -307,25 +307,49 @@ saveMP4.onclick=async()=>{
   saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = true;
 
   try{
-    /* FIXED: FFmpeg instead of FFmpegWASM */
-    const { createFFmpeg, fetchFile } = FFmpeg;
+ /* ---------- SAVE GIF (AUTO-DETECT FFMPEG) ---------- */
+saveGIF.onclick = async () => {
+  if (buffer.length === 0) {
+    alert("No video recorded yet.");
+    return;
+  }
+
+  statusText.innerText = "Converting to high-quality GIF... Please wait";
+  saveGIF.disabled = saveMP4.disabled = saveWebM.disabled = true;
+
+  try {
+    /* ✔ AUTO-DETECT FFmpeg GLOBAL */
+    const FF = window.FFmpeg || window.FFmpegWASM;
+    if (!FF) throw new Error("FFmpeg library not found in this browser.");
+
+    const { createFFmpeg, fetchFile } = FF;
     const ffmpeg = createFFmpeg({ log: true });
     await ffmpeg.load();
 
-    const blob = new Blob(buffer,{type:mimeType});
-    await ffmpeg.FS('writeFile','input.webm',await fetchFile(blob));
-    await ffmpeg.run('-i','input.webm','-c:v','libx264','-preset','veryfast','-movflags','faststart','output.mp4');
-    const data = ffmpeg.FS('readFile','output.mp4');
-    const mp4Blob = new Blob([data.buffer],{type:'video/mp4'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(mp4Blob);
-    a.download = `dashcam_${new Date().toISOString()}.mp4`;
-    a.click();
-  } catch(err){ alert("MP4 Conversion Failed:\n"+err); }
+    const blob = new Blob(buffer, { type: mimeType });
+    await ffmpeg.FS("writeFile", "input.webm", await fetchFile(blob));
 
-  statusText.innerText="";
-  popup.style.display="none";
-  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = false;
+    await ffmpeg.run(
+      "-i", "input.webm",
+      "-vf", "fps=12,scale=720:-1:flags=lanczos",
+      "-loop", "0",
+      "output.gif"
+    );
+
+    const data = ffmpeg.FS("readFile", "output.gif");
+    const gifBlob = new Blob([data.buffer], { type: "image/gif" });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(gifBlob);
+    a.download = `dashcam_${new Date().toISOString()}.gif`;
+    a.click();
+  } catch (err) {
+    alert("GIF Conversion Failed:\n" + err);
+  }
+
+  statusText.innerText = "";
+  popup.style.display = "none";
+  saveGIF.disabled = saveMP4.disabled = saveWebM.disabled = false;
 };
 
 /* ---------- SAVE GIF (FFmpeg FIXED) ---------- */
