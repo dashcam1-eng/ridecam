@@ -286,7 +286,7 @@ saveWebM.onclick=()=>{
   popup.style.display="none";
 };
 
-/* ---------- SAVE MP4 ---------- */
+/* ---------- SAVE MP4 (FFmpeg FIXED) ---------- */
 saveMP4.onclick=async()=>{
   if(buffer.length===0){alert("No video recorded yet."); return;}
 
@@ -304,7 +304,8 @@ saveMP4.onclick=async()=>{
   saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = true;
 
   try{
-    const { createFFmpeg, fetchFile } = FFmpegWASM; /* NOTE: You may also update MP4 block if needed */
+    /* FIXED: FFmpeg instead of FFmpegWASM */
+    const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: true });
     await ffmpeg.load();
 
@@ -324,15 +325,15 @@ saveMP4.onclick=async()=>{
   saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = false;
 };
 
-/* ---------- SAVE GIF (FIXED) ---------- */
+/* ---------- SAVE GIF (FFmpeg FIXED) ---------- */
 saveGIF.onclick=async()=>{
   if(buffer.length===0){alert("No video recorded yet."); return;}
   statusText.innerText="Converting to high-quality GIF... Please wait";
   saveGIF.disabled = saveMP4.disabled = saveWebM.disabled = true;
 
   try{
-    /* --- FIX: Use FFmpegWASM instead of FFmpeg --- */
-    const { createFFmpeg, fetchFile } = FFmpegWASM;
+    /* FIXED: FFmpeg instead of FFmpegWASM */
+    const { createFFmpeg, fetchFile } = FFmpeg;
 
     const ffmpeg = createFFmpeg({ log: true });
     await ffmpeg.load();
