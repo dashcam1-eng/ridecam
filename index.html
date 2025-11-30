@@ -97,30 +97,27 @@ h1 { text-align:center; margin-top:10px; }
     <div class="faq-item"><h3>How does this work?</h3>
       <p>Click Start to begin. It keeps the last 5 minutes. Press <b>Save Video</b> when needed.</p>
     </div>
-    <div class="faq-item"><h3>What file format does it save in?</h3>
-      <p>WebM by default. You can convert to MP4 or GIF in browser or through other means.</p>
+    <div class="faq-item"><h3>What file format?</h3>
+      <p>WebM by default. You can convert to MP4 or GIF in browser.</p>
     </div>
-    <div class="faq-item"><h3> What about iOS?</h3>
-      <p>iOS Safari cannot convert WebM → MP4. You will have to download the video in Webmedia and convert thereafter.</p>
-    </div>
- <div class="faq-item"><h3>How am I doing?</h3>
-      <p>Great!</p>
+    <div class="faq-item"><h3>iOS?</h3>
+      <p>iOS Safari cannot convert WebM → MP4. You will get a fallback option.</p>
     </div>
   </div>
 
   <div id="aboutPage" class="page">
     <h1>About RideCam.ca</h1>
-    <p>Ridecam.ca is 100% free. It does not collect or save any data, personal information, or video. For inquiries, feedback, or just to say thanks Email: ridecam.ca@gmail.com. </p>
+    <p>Use your phone as a DashCam. Email: ridecam.ca@gmail.com. 100% free. No data collection.</p>
   </div>
 
   <div id="legalPage" class="page">
     <h1>Legal Notice</h1>
-    <p>Disclaimer: By accessing and using this webpage’s camera functionality, you acknowledge and agree that all use is at your sole risk. This site and its operators make no warranties, express or implied, regarding the performance, security, or accuracy of the camera features. The site assumes no liability for any loss, damage, or consequences arising from your use of the camera or any data captured through it. By continuing, you consent to these terms and accept full responsibility for your actions while using this service.</p>
+    <p>Use at your own risk. Follow laws. No warranty.</p>
   </div>
 
   <div id="donationsPage" class="page">
     <h1>Support RideCam</h1>
-    <p>RideCam.ca is 100% free. If you want to buy me a coffee thats always appreciated.</p>
+    <p>RideCam.ca is 100% free. Donations help development.</p>
     <script async src="https://js.stripe.com/v3/buy-button.js"></script>
     <stripe-buy-button buy-button-id="buy_btn_1SYtSBLRKVOKcZZ1gFQfvk3V" publishable-key="pk_live_6At8Xa6cO7izid0cDO3u8GfH"></stripe-buy-button>
   </div>
@@ -307,49 +304,25 @@ saveMP4.onclick=async()=>{
   saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = true;
 
   try{
- /* ---------- SAVE GIF (AUTO-DETECT FFMPEG) ---------- */
-saveGIF.onclick = async () => {
-  if (buffer.length === 0) {
-    alert("No video recorded yet.");
-    return;
-  }
-
-  statusText.innerText = "Converting to high-quality GIF... Please wait";
-  saveGIF.disabled = saveMP4.disabled = saveWebM.disabled = true;
-
-  try {
-    /* ✔ AUTO-DETECT FFmpeg GLOBAL */
-    const FF = window.FFmpeg || window.FFmpegWASM;
-    if (!FF) throw new Error("FFmpeg library not found in this browser.");
-
-    const { createFFmpeg, fetchFile } = FF;
+    /* FIXED: FFmpeg instead of FFmpegWASM */
+    const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: true });
     await ffmpeg.load();
 
-    const blob = new Blob(buffer, { type: mimeType });
-    await ffmpeg.FS("writeFile", "input.webm", await fetchFile(blob));
-
-    await ffmpeg.run(
-      "-i", "input.webm",
-      "-vf", "fps=12,scale=720:-1:flags=lanczos",
-      "-loop", "0",
-      "output.gif"
-    );
-
-    const data = ffmpeg.FS("readFile", "output.gif");
-    const gifBlob = new Blob([data.buffer], { type: "image/gif" });
-
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(gifBlob);
-    a.download = `dashcam_${new Date().toISOString()}.gif`;
+    const blob = new Blob(buffer,{type:mimeType});
+    await ffmpeg.FS('writeFile','input.webm',await fetchFile(blob));
+    await ffmpeg.run('-i','input.webm','-c:v','libx264','-preset','veryfast','-movflags','faststart','output.mp4');
+    const data = ffmpeg.FS('readFile','output.mp4');
+    const mp4Blob = new Blob([data.buffer],{type:'video/mp4'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(mp4Blob);
+    a.download = `dashcam_${new Date().toISOString()}.mp4`;
     a.click();
-  } catch (err) {
-    alert("GIF Conversion Failed:\n" + err);
-  }
+  } catch(err){ alert("MP4 Conversion Failed:\n"+err); }
 
-  statusText.innerText = "";
-  popup.style.display = "none";
-  saveGIF.disabled = saveMP4.disabled = saveWebM.disabled = false;
+  statusText.innerText="";
+  popup.style.display="none";
+  saveMP4.disabled = saveGIF.disabled = saveWebM.disabled = false;
 };
 
 /* ---------- SAVE GIF (FFmpeg FIXED) ---------- */
@@ -405,5 +378,3 @@ stopBtn.addEventListener("click",stopCamera);
 
 </body>
 </html>
-
-You made changes to this code from what it was previously. now the legal page and menu buttons arent accessible
