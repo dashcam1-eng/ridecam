@@ -569,10 +569,12 @@ startBtn.addEventListener("click", startRecording);
 async function saveVideoBlob() {
   if (buffer.length === 0) return;
 
-  const currentBuffer = buffer.slice(); // copy current chunks
+  // Copy the current chunks so we can save without affecting ongoing recording
+  const currentBuffer = buffer.slice();
   const blob = new Blob(currentBuffer, { type: mimeType });
   let ext = mimeType.includes("mp4") ? "mp4" : "webm";
 
+  // Create download link
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.download = `dashcam_${new Date().toISOString()}.${ext}`;
@@ -581,6 +583,9 @@ async function saveVideoBlob() {
 
   URL.revokeObjectURL(url);
   showSavedPopup();
+
+  // Clear the buffer so the next save only includes new chunks
+  buffer = [];
 }
 
 
