@@ -195,12 +195,6 @@ h1 {
 
     <video id="preview" autoplay playsinline muted></video>
 
-    <div id="saveNotice" 
-         style="display:none; position:absolute; top:20%; width:100%; text-align:center;
-                color:#fff; font-size:24px; z-index:999; text-shadow:0 0 8px #000;">
-      Saving… recording 20 more seconds. Press STOP to finish early.
-    </div>
-
     <div id="controls" class="controls">
       <button id="saveBtn" class="control-btn">Save Video</button>
       <button id="stopBtn" class="control-btn">Stop</button>
@@ -292,6 +286,14 @@ Use of this site constitutes acceptance of these terms.</p>
       RideCam.ca is 100% free and has no ads.<br>
       You can donate below if you'd like to support development.
     </p>
+
+    <script async src="https://js.stripe.com/v3/buy-button.js"></script>
+
+<stripe-buy-button
+  buy-button-id="buy_btn_1SYtSBLRKVOKcZZ1gFQfvk3V"
+  publishable-key="pk_live_6At8Xa6cO7izid0cDO3u8GfH"
+>
+</stripe-buy-button>
   </div>
 
 </div>
@@ -337,14 +339,9 @@ const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
 const description = document.getElementById("description");
-const saveNotice = document.getElementById("saveNotice");
 
 let mimeType = "";
 let drawing = false;
-
-/* ---------- STATE VARIABLES ---------- */
-let extendedRecording = false;
-let saveTimeout = null;
 
 const overlayCanvas = document.createElement("canvas");
 overlayCanvas.style.display = "none";
@@ -402,15 +399,21 @@ function drawOverlay() {
   ctx.fillText(dateText, centerX - dateWidth/2, yPos);
   ctx.fillText(speedText, centerX - speedWidth/2, yPos + baseFontSize + 4);
 
-  /* WATERMARK */
-  ctx.font = `${baseFontSize * 1.6}px Arial`;
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.textBaseline = "bottom";
-  const watermark = "Ridecam.ca";
-  const wmWidth = ctx.measureText(watermark).width;
-  const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
-  const wmY = overlayCanvas.height - 40;
-  ctx.fillText(watermark, wmX, wmY);
+/* ---------- WATERMARK ---------- */
+ctx.font = `${baseFontSize * 1.6}px Arial`;  // 200% larger
+ctx.fillStyle = "rgba(255,255,255,0.85)";
+ctx.textBaseline = "bottom";
+
+const watermark = "Ridecam.ca";
+const wmWidth = ctx.measureText(watermark).width;
+
+// CENTERED horizontally
+const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
+
+// Keep near the bottom
+const wmY = overlayCanvas.height - 40;
+
+ctx.fillText(watermark, wmX, wmY);
 
   requestAnimationFrame(drawOverlay);
 }
@@ -419,98 +422,86 @@ function drawOverlay() {
 async function startRecording() {
   try {
     mimeType = pickMimeType();
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:"environment" },
+      audio: false
+    });
+
     preview.srcObject = stream;
-    preview.style.display="block";
-    startBtn.style.display="none";
-    description.style.display="none";
-    controls.style.display="flex";
-    overlayCanvas.style.display="block";
-    setTimeout(resizeCanvas,200);
+    preview.style.display = "block";
+    startBtn.style.display = "none";
+    description.style.display = "none";
+    controls.style.display = "flex";
+    overlayCanvas.style.display = "block";
+    setTimeout(resizeCanvas, 200);
 
     drawing = true;
     drawOverlay();
 
     const combinedStream = overlayCanvas.captureStream(30);
-    stream.getTracks().forEach(t=>combinedStream.addTrack(t));
+    stream.getTracks().forEach(t => combinedStream.addTrack(t));
 
     buffer = [];
-    recorder = new MediaRecorder(combinedStream,{mimeType});
+    recorder = new MediaRecorder(combinedStream, { mimeType });
 
-    recorder.ondataavailable=(e)=>{
-      if(e.data.size>0){
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
         buffer.push(e.data);
-        if(buffer.length>maxChunks) buffer.shift();
+        if (buffer.length > maxChunks) buffer.shift();
       }
     };
 
     recorder.start(500);
-  }catch(err){alert("Camera access failed. Try again.\n"+err);}
+  } catch (err) {
+    alert("Camera access failed. Try tapping Start again.\n" + err);
+  }
 }
 
-function pickMimeType(){
-  const options=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm","video/mp4"];
-  for(let type of options) if(MediaRecorder.isTypeSupported(type)) return type;
+function pickMimeType() {
+  const options = [
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm",
+    "video/mp4"
+  ];
+  for (let type of options) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
   return "video/webm";
 }
 
-startBtn.addEventListener("click",startRecording);
+startBtn.addEventListener("click", startRecording);
 
 /* ---------- SAVE VIDEO ---------- */
-saveBtn.addEventListener("click",()=>{
-  if(!recorder||buffer.length===0){alert("No video recorded yet.");return;}
-  if(saveTimeout) clearTimeout(saveTimeout);
-
-  saveNotice.style.display="block";
-  extendedRecording=true;
-
-  // Auto-save after 20s if user does not stop
-  saveTimeout = setTimeout(()=>{
-    saveVideoBlob();
-    extendedRecording=false;
-    saveNotice.style.display="none";
-  },20000);
-});
-
-function saveVideoBlob(){
-  if(!buffer.length) return;
-  const blob = new Blob(buffer,{type:mimeType});
+saveBtn.addEventListener("click", () => {
+  if (buffer.length === 0) {
+    alert("No video recorded yet.");
+    return;
+  }
+  const blob = new Blob(buffer, { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  let ext = mimeType.includes("mp4")?"mp4":"webm";
-  a.download=`dashcam_${new Date().toISOString()}.${ext}`;
-  a.href=url;
+  a.href = url;
+  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
+  a.download = `dashcam_${new Date().toISOString()}.${ext}`;
   a.click();
-}
-
-/* ---------- STOP BUTTON FIXED ---------- */
-stopBtn.addEventListener("click",()=>{
-  if(extendedRecording){
-    // Stop extended recording but remain on Save/Stop screen
-    if(saveTimeout){clearTimeout(saveTimeout); saveTimeout=null;}
-    saveVideoBlob();
-    extendedRecording=false;
-    saveNotice.style.display="none";
-    // stay on Save/Stop screen
-  } else {
-    // Stop camera and revert to Start screen
-    stopCamera();
-  }
 });
 
-function stopCamera(){
-  drawing=false;
-  overlayCanvas.style.display="none";
-  if(saveTimeout){clearTimeout(saveTimeout); saveTimeout=null;}
-  if(recorder) recorder.stop();
-  if(stream) stream.getTracks().forEach(t=>t.stop());
-
-  preview.style.display="none";
-  controls.style.display="none";
-  startBtn.style.display="block";
-  description.style.display="block";
-  saveNotice.style.display="none";
+/* ---------- STOP CAMERA ---------- */
+function stopCamera() {
+  drawing = false;
+  overlayCanvas.style.display = "none";
+  if (recorder) recorder.stop();
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  preview.style.display = "none";
+  controls.style.display = "none";
+  startBtn.style.display = "block";
+  description.style.display = "block";
 }
+
+stopBtn.addEventListener("click", stopCamera);
+
 </script>
+
 </body>
 </html>
