@@ -566,28 +566,56 @@ function pickMimeType() {
 startBtn.addEventListener("click", startRecording);
 
 /* ---------- SAVE VIDEO ---------- */
-async function saveVideoBlob() {
-  if (buffer.length === 0) return;
+let mediaRecorder;
+let buffer = [];
+let stream;
+const mimeType = 'video/webm'; // use WebM for mid-recording saves
 
-  // Copy the current chunks so we can save without affecting ongoing recording
-  const currentBuffer = buffer.slice();
-  const blob = new Blob(currentBuffer, { type: mimeType });
-  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
-
-  // Create download link
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.download = `dashcam_${new Date().toISOString()}.${ext}`;
-  a.href = url;
-  a.click();
-
-  URL.revokeObjectURL(url);
-  showSavedPopup();
-
-  // Clear the buffer so the next save only includes new chunks
-  buffer = [];
+// Start recording (call once)
+async function startRecording() {
+  stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  startSegmentRecording();
 }
 
+// Start a MediaRecorder segment
+function startSegmentRecording() {
+  buffer = [];
+  mediaRecorder = new MediaRecorder(stream, { mimeType });
+  
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) buffer.push(event.data);
+  };
+  
+  mediaRecorder.start(1000); // emits chunks every 1 second
+}
+
+// Save the current video segment
+async function saveVideoBlob() {
+  if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+
+  // Stop the current MediaRecorder to finalize the file
+  mediaRecorder.stop();
+
+  // Wait for the stop event to fire before saving
+  mediaRecorder.onstop = () => {
+    if (buffer.length === 0) return;
+
+    const blob = new Blob(buffer, { type: mimeType });
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dashcam_${new Date().toISOString()}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showSavedPopup();
+
+    // Start a new MediaRecorder segment for continuous recording
+    startSegmentRecording();
+  };
+}
 
 /* ---------- UPDATED AUTO-SAVE ---------- */
 saveBtn.addEventListener("click", () => {
