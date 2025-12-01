@@ -566,16 +566,21 @@ function pickMimeType() {
 startBtn.addEventListener("click", startRecording);
 
 /* ---------- SAVE VIDEO ---------- */
-let mediaRecorder;
-let buffer = [];
-let stream;
-const mimeType = 'video/webm'; // use WebM for mid-recording saves
+async function saveVideoBlob() {
+  if (buffer.length === 0) return;
 
-// Start recording (call once)
-async function startRecording() {
-  stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  startSegmentRecording();
+  const blob = new Blob(buffer, { type: mimeType });
+  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.download = `dashcam_${new Date().toISOString()}.${ext}`;
+  a.href = url;
+  a.click();
+
+  showSavedPopup(); /* <-- new */
 }
+
 
 // Start a MediaRecorder segment
 function startSegmentRecording() {
