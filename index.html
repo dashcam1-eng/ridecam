@@ -138,6 +138,19 @@ button {
 #saveBtn { background:#007bff; color:white; }
 #stopBtn { background:#dc3545; color:white; }
 
+/* SAVE NOTICE */
+#saveNotice {
+  display:none; 
+  position:absolute; 
+  top:20%; 
+  width:100%; 
+  text-align:center; 
+  font-size:24px; 
+  z-index:999; 
+  text-shadow:0 0 8px #000; 
+  color:white;
+}
+
 /* OTHER PAGES */
 .page {
   display:none;
@@ -194,6 +207,10 @@ h1 {
     <button id="startBtn" class="center-start">Start</button>
 
     <video id="preview" autoplay playsinline muted></video>
+
+    <div id="saveNotice">
+      Recording 20 more seconds before saving. Press STOP to finish early.
+    </div>
 
     <div id="controls" class="controls">
       <button id="saveBtn" class="control-btn">Save Video</button>
@@ -339,9 +356,12 @@ const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
 const description = document.getElementById("description");
+const saveNotice = document.getElementById("saveNotice");
 
 let mimeType = "";
 let drawing = false;
+let savingInProgress = false;
+let saveTimeout = null;
 
 const overlayCanvas = document.createElement("canvas");
 overlayCanvas.style.display = "none";
@@ -399,21 +419,15 @@ function drawOverlay() {
   ctx.fillText(dateText, centerX - dateWidth/2, yPos);
   ctx.fillText(speedText, centerX - speedWidth/2, yPos + baseFontSize + 4);
 
-/* ---------- WATERMARK ---------- */
-ctx.font = `${baseFontSize * 1.6}px Arial`;  // 200% larger
-ctx.fillStyle = "rgba(255,255,255,0.85)";
-ctx.textBaseline = "bottom";
-
-const watermark = "Ridecam.ca";
-const wmWidth = ctx.measureText(watermark).width;
-
-// CENTERED horizontally
-const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
-
-// Keep near the bottom
-const wmY = overlayCanvas.height - 40;
-
-ctx.fillText(watermark, wmX, wmY);
+  /* ---------- WATERMARK ---------- */
+  ctx.font = `${baseFontSize * 1.6}px Arial`;
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.textBaseline = "bottom";
+  const watermark = "Ridecam.ca";
+  const wmWidth = ctx.measureText(watermark).width;
+  const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
+  const wmY = overlayCanvas.height - 40;
+  ctx.fillText(watermark, wmX, wmY);
 
   requestAnimationFrame(drawOverlay);
 }
@@ -472,19 +486,43 @@ function pickMimeType() {
 
 startBtn.addEventListener("click", startRecording);
 
-/* ---------- SAVE VIDEO ---------- */
-saveBtn.addEventListener("click", () => {
-  if (buffer.length === 0) {
-    alert("No video recorded yet.");
-    return;
-  }
+/* ---------- SAVE VIDEO WITH 20s EXTRA ---------- */
+async function saveVideoBlob() {
+  if (buffer.length === 0) return;
+
   const blob = new Blob(buffer, { type: mimeType });
+  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
   a.download = `dashcam_${new Date().toISOString()}.${ext}`;
+  a.href = url;
   a.click();
+}
+
+saveBtn.addEventListener("click", () => {
+  if (buffer.length === 0) { alert("No video recorded yet."); return; }
+
+  saveNotice.style.display = "block";
+  savingInProgress = true;
+
+  saveTimeout = setTimeout(() => {
+    saveVideoBlob();
+    saveNotice.style.display = "none";
+    savingInProgress = false;
+  }, 20000);
+});
+
+/* ---------- STOP BUTTON ---------- */
+stopBtn.addEventListener("click", () => {
+  if (savingInProgress) {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveVideoBlob();
+    savingInProgress = false;
+    saveNotice.style.display = "none";
+  } else {
+    stopCamera();
+  }
 });
 
 /* ---------- STOP CAMERA ---------- */
@@ -498,9 +536,6 @@ function stopCamera() {
   startBtn.style.display = "block";
   description.style.display = "block";
 }
-
-stopBtn.addEventListener("click", stopCamera);
-
 </script>
 
 </body>
