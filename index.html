@@ -545,6 +545,7 @@ async function saveVideoBlob() {
   a.click();
 }
 
+/* ---------- UPDATED AUTO-SAVE FIX (no corruption) ---------- */
 saveBtn.addEventListener("click", () => {
   if (buffer.length === 0) { alert("No video recorded yet."); return; }
 
@@ -552,9 +553,17 @@ saveBtn.addEventListener("click", () => {
   savingInProgress = true;
 
   saveTimeout = setTimeout(() => {
-    saveVideoBlob();
-    saveNotice.style.display = "none";
-    savingInProgress = false;
+
+    // Stop recorder so it flushes final chunks
+    if (recorder && recorder.state === "recording") {
+      recorder.onstop = async () => {
+        await saveVideoBlob();
+        saveNotice.style.display = "none";
+        savingInProgress = false;
+      };
+      recorder.stop();
+    }
+
   }, 20000);
 });
 
