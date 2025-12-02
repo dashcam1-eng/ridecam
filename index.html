@@ -560,74 +560,80 @@ function pickMimeType() {
   for (let type of options) {
     if (MediaRecorder.isTypeSupported(type)) return type;
   }
-  return "video/webm";
+  return "video/webm"; // fallback
 }
-
-startBtn.addEventListener("click", startRecording);
-
-/* ---------- SAVE VIDEO ---------- */
-async function saveVideoBlob() {
-  if (buffer.length === 0) return;
-
-  const blob = new Blob(buffer, { type: mimeType });
-  let ext = mimeType.includes("mp4") ? "mp4" : "webm";
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.download = `dashcam_${new Date().toISOString()}.${ext}`;
-  a.href = url;
-  a.click();
-
-  showSavedPopup(); /* <-- new */
-}
-
-/* ---------- UPDATED AUTO-SAVE ---------- */
-saveBtn.addEventListener("click", () => {
-  if (buffer.length === 0) { alert("No video recorded yet."); return; }
-
-  saveNotice.style.display = "block";
-  savingInProgress = true;
-
-  saveTimeout = setTimeout(() => {
-
-    if (recorder && recorder.state === "recording") {
-      recorder.onstop = async () => {
-        await saveVideoBlob();
-        saveNotice.style.display = "none"; /* <-- new */
-        savingInProgress = false;
-      };
-      recorder.stop();
-    }
-
-  }, 20000);
-});
-
-/* ---------- STOP BUTTON ---------- */
-stopBtn.addEventListener("click", () => {
-  if (savingInProgress) {
-    if (saveTimeout) clearTimeout(saveTimeout);
-
-    saveVideoBlob();
-
-    saveNotice.style.display = "none"; /* <-- new */
-    savingInProgress = false;
-  } else {
-    stopCamera();
-  }
-});
 
 /* ---------- STOP CAMERA ---------- */
 function stopCamera() {
-  drawing = false;
-  overlayCanvas.style.display = "none";
-  if (recorder) recorder.stop();
-  if (stream) stream.getTracks().forEach(t => t.stop());
+  try {
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  } catch(e){}
+
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+  }
+
+  preview.srcObject = null;
   preview.style.display = "none";
+  overlayCanvas.style.display = "none";
+  drawing = false;
+
+  saveNotice.style.display = "none";
   controls.style.display = "none";
   startBtn.style.display = "block";
   description.style.display = "block";
-}
-</script>
 
+  savingInProgress = false;
+  buffer = [];
+}
+
+/* ---------- SAVE VIDEO ---------- */
+function saveVideo() {
+  if (savingInProgress) return;
+  savingInProgress = true;
+
+  saveNotice.innerText =
+    "Recording 5 more seconds before saving. Press STOP to finish early.";
+  saveNotice.style.display = "block";
+
+  saveTimeout = setTimeout(() => finishSaving(), 5000);
+}
+
+/* ---------- FINISH SAVING ---------- */
+function finishSaving() {
+  try { recorder.stop(); } catch(e){}
+
+  saveNotice.style.display = "none";
+
+  setTimeout(() => {
+    const blob = new Blob(buffer, { type: mimeType });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ridecam.webm";
+    a.click();
+
+    showSavedPopup();
+
+    savingInProgress = false;
+  }, 200);
+}
+
+/* ---------- STOP BUTTON ---------- */
+stopBtn.onclick = () => {
+  if (savingInProgress) {
+    clearTimeout(saveTimeout);
+    finishSaving();
+  } else {
+    stopCamera();
+  }
+};
+
+/* ---------- BUTTON EVENTS ---------- */
+startBtn.onclick = startRecording;
+saveBtn.onclick = saveVideo;
+</script>
 </body>
 </html>
