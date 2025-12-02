@@ -510,14 +510,54 @@ function showSavedPopup() {
   setTimeout(() => savedPopup.style.display = "none", 4000);
 }
 
+let preloadedStream = null;
+
+// Preload camera and ask for permissions
+async function preloadCamera() {
+  try {
+    preloadedStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
+
+    // Show preview in hidden mode to initialize camera
+    preview.srcObject = preloadedStream;
+    preview.style.display = "none";
+
+  } catch (err) {
+    console.warn("Camera preload failed:", err);
+  }
+}
+
+// Preload location permission
+let watchId = null;
+function preloadLocation() {
+  if (navigator.geolocation) {
+    watchId = navigator.geolocation.watchPosition(
+      updateSpeed,
+      console.error,
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+    );
+  }
+}
+
+// Call these on page load
+preloadCamera();
+preloadLocation();
+
 /* ---------- START RECORDING ---------- */
 async function startRecording() {
   try {
     mimeType = pickMimeType();
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:"environment" },
-      audio: false
-    });
+   if (!preloadedStream) {
+  // fallback if preload failed
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode:"environment" },
+    audio: false
+  });
+} else {
+  stream = preloadedStream;
+}
 
     preview.srcObject = stream;
     preview.style.display = "block";
