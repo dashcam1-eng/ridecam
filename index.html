@@ -644,29 +644,36 @@ function saveVideo() {
 
 /* ---------- FINISH SAVING ---------- */
 function finishSaving() {
-  try { recorder.stop(); } catch(e){}
-
   saveNotice.style.display = "none";
 
-  setTimeout(() => {
-    const blob = new Blob(buffer, { type: mimeType });
+  // Copy current buffer to avoid modifying it during ongoing recording
+  const bufferCopy = buffer.slice();
 
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "ridecam.webm";
-    a.click();
+  // Create and download blob from copied buffer
+  const blob = new Blob(bufferCopy, { type: mimeType });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ridecam_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
+  a.click();
 
-    showSavedPopup();
+  showSavedPopup();
 
-    savingInProgress = false;
-  }, 200);
+  savingInProgress = false;
+
+  // If the user pressed STOP while saving, handle it
+  if (stopRequestedDuringSave) {
+    stopRequestedDuringSave = false;
+    stopCamera();
+  }
 }
 
-/* ---------- STOP BUTTON ---------- */
+// Track if STOP was pressed during saving
+let stopRequestedDuringSave = false;
 stopBtn.onclick = () => {
   if (savingInProgress) {
     clearTimeout(saveTimeout);
     finishSaving();
+    stopRequestedDuringSave = true;
   } else {
     stopCamera();
   }
