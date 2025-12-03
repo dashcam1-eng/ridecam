@@ -573,24 +573,40 @@ async function startRecording() {
     const combinedStream = overlayCanvas.captureStream(30);
     stream.getTracks().forEach(t => combinedStream.addTrack(t));
 
-    buffer = [];
+ buffer = [];
+recorder = new MediaRecorder(combinedStream, { mimeType });
+
+const BUFFER_SECONDS = 60;   // rolling buffer length
+const TIMESLICE = 1000;      // 1 sec per chunk
+const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE); // 60 chunks
+
+// Function to start a recorder with data handler
+function startRecorder() {
     recorder = new MediaRecorder(combinedStream, { mimeType });
 
-   // --- OPTION A (rolling buffer, correct implementation) ---
-const BUFFER_SECONDS = 60;   // 5 minutes
-const TIMESLICE = 1000;       // 1 sec per chunk
-const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE); // 300 chunks
+    recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) buffer.push(e.data);
 
-recorder.start(TIMESLICE);
+        while (buffer.length > MAX_CHUNKS) {
+            buffer.shift();
+        }
+    };
 
-recorder.ondataavailable = (e) => {
-  if (e.data.size > 0) buffer.push(e.data);
+    recorder.start(TIMESLICE);
+}
 
-  // Keep last 1 minutes only
-  while (buffer.length > MAX_CHUNKS) {
-    buffer.shift();
-  }
-};
+// Start first recording
+startRecorder();
+
+// Auto-restart every 20 seconds
+const RESTART_INTERVAL = 20000; // 20s
+let restartTimer = setInterval(() => {
+    if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        startRecorder();
+    }
+}, RESTART_INTERVAL);
+
 
   } catch (err) {
     alert("Camera access failed. Try tapping Start again.\n" + err);
