@@ -575,13 +575,32 @@ async function startRecording() {
 
     buffer = [];
     recorder = new MediaRecorder(combinedStream, { mimeType });
+recorder.start(TIMESLICE);
+
+// --- AUTO RESTART MEDIARECORDER EVERY 30 SECONDS ---"
+if (window.recorderRestartInterval) clearInterval(window.recorderRestartInterval);
+
+window.recorderRestartInterval = setInterval(() => {
+  if (!recorder) return;
+
+  if (recorder.state === "recording") {
+    console.log("Auto-restarting MediaRecorder...");
+    try {
+      recorder.stop();           // flush last chunk
+      recorder.start(TIMESLICE); // immediately resume
+    } catch (err) {
+      console.warn("Recorder restart failed:", err);
+    }
+  }
+}, 30000); // 30 sec
+
 
    // --- OPTION A (rolling buffer, correct implementation) ---
 const TIMESLICE = 1000;      // 1 second per chunk
 const BUFFER_30SEC = 30;     // last 30 seconds
 const BUFFER_10SEC = 10;     // last 10 seconds
 
-recorder.start(TIMESLICE);
+
 
 recorder.ondataavailable = (e) => {
   if (e.data.size > 0) buffer.push(e.data);
@@ -591,6 +610,7 @@ recorder.ondataavailable = (e) => {
     buffer.shift();
   }
 };
+
 
   } catch (err) {
     alert("Camera access failed. Try tapping Start again.\n" + err);
