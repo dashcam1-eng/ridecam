@@ -559,11 +559,6 @@ async function startRecording() {
   stream = preloadedStream;
 }
 
-   // --- OPTION A (rolling buffer, correct implementation) ---
-const TIMESLICE = 1000;      // 1 second per chunk
-const BUFFER_30SEC = 30;     // last 30 seconds
-const BUFFER_10SEC = 10;     // last 10 seconds
-
     preview.srcObject = stream;
     preview.style.display = "block";
     startBtn.style.display = "none";
@@ -580,39 +575,22 @@ const BUFFER_10SEC = 10;     // last 10 seconds
 
     buffer = [];
     recorder = new MediaRecorder(combinedStream, { mimeType });
+
+   // --- OPTION A (rolling buffer, correct implementation) ---
+const BUFFER_SECONDS = 30;   // 30 minutes
+const TIMESLICE = 1000;       // 1 sec per chunk
+const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE); // 300 chunks
+
 recorder.start(TIMESLICE);
-
-// --- AUTO RESTART MEDIARECORDER EVERY 30 SECONDS ---"
-if (window.recorderRestartInterval) clearInterval(window.recorderRestartInterval);
-
-window.recorderRestartInterval = setInterval(() => {
-  if (!recorder) return;
-
-  if (recorder.state === "recording") {
-    console.log("Auto-restarting MediaRecorder...");
-    try {
-      recorder.stop();           // flush last chunk
-      recorder.start(TIMESLICE); // immediately resume
-    } catch (err) {
-      console.warn("Recorder restart failed:", err);
-    }
-  }
-}, 30000); // 30 sec
-
-
-
-
-
 
 recorder.ondataavailable = (e) => {
   if (e.data.size > 0) buffer.push(e.data);
 
-  // Keep last 30 seconds only
-  while (buffer.length >BUFFER_30SEC) {
+  // Keep last 5 minutes only
+  while (buffer.length > MAX_CHUNKS) {
     buffer.shift();
   }
 };
-
 
   } catch (err) {
     alert("Camera access failed. Try tapping Start again.\n" + err);
@@ -660,9 +638,6 @@ function stopCamera() {
 }
 /* ---------- SAVE VIDEO ---------- */
 // Save video button
-
-
-
 function saveVideo() {
   if (savingInProgress) return;
   savingInProgress = true;
@@ -678,26 +653,6 @@ function saveVideo() {
   const onExtraData = (e) => {
     if (e.data.size > 0) extraChunks.push(e.data);
   };
-
-function saveLast30Seconds() {
-  const chunks = buffer.slice(-BUFFER_30SEC);
-  const blob = new Blob(chunks, { type: mimeType });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "ridecam_30sec_" + new Date().toISOString().replace(/[:.]/g,"-") + ".webm";
-  a.click();
-  showSavedPopup();
-}
-
-function saveLast10Seconds() {
-  const chunks = buffer.slice(-BUFFER_10SEC);
-  const blob = new Blob(chunks, { type: mimeType });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "ridecam_10sec_" + new Date().toISOString().replace(/[:.]/g,"-") + ".webm";
-  a.click();
-  showSavedPopup();
-}
 
   recorder.addEventListener("dataavailable", onExtraData);
 
