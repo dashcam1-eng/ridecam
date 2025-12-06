@@ -586,7 +586,7 @@ recorder.start(TIMESLICE);
 recorder.ondataavailable = (e) => {
   if (e.data.size > 0) buffer.push(e.data);
 
-  // Keep last 1 minutes only
+  // Keep last 5 minutes only
   while (buffer.length > MAX_CHUNKS) {
     buffer.shift();
   }
@@ -681,7 +681,7 @@ function saveVideo() {
             stopCamera();
         }
 
-    }, 7750); // 750ms is enough for MediaRecorder to provide the final chunk
+    }, 750); // 750ms is enough for MediaRecorder to provide the final chunk
 }
 /* ---------- FINISH SAVING ---------- */
 function finishSaving() {
