@@ -637,51 +637,60 @@ function stopCamera() {
   buffer = [];
 }
 /* ---------- SAVE VIDEO ---------- */
-// Save video button
-function saveVideo() {
-    if (savingInProgress) return;
-    savingInProgress = true;
+async function saveVideo() {
+  if (savingInProgress) return;
+  savingInProgress = true;
 
-    saveNotice.innerText = "Saving Video";
-    saveNotice.style.display = "block";
+  saveNotice.innerText = "Saving Video";
+  saveNotice.style.display = "block";
 
-    // Array to collect final chunk(s)
-    const finalChunks = [];
-    const onExtraData = (e) => {
-        if (e.data && e.data.size > 0) finalChunks.push(e.data);
-    };
+  // Stop current recorder to finalize the old file
+  recorder.stop();
 
-    // Listen for the final data
-    recorder.addEventListener("dataavailable", onExtraData);
+  // Make a copy of the old buffer
+  const oldBuffer = buffer.slice();
 
-    // Force MediaRecorder to flush the final chunk immediately
-    recorder.requestData();
+  // Short delay to ensure recorder fires final chunks
+  setTimeout(() => {
+    // Create blob from old buffer
+    const blob = new Blob(oldBuffer, { type: mimeType });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ridecam_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
+    a.click();
 
-    // Short delay to ensure final chunk is ready
-    setTimeout(() => {
-        recorder.removeEventListener("dataavailable", onExtraData);
+    showSavedPopup();
+    saveNotice.style.display = "none";
+    savingInProgress = false;
 
-        // Combine rolling buffer + final chunk
-        const allChunks = buffer.slice().concat(finalChunks);
+    // Clear old buffer
+    buffer = [];
 
-        const blob = new Blob(allChunks, { type: mimeType });
+    // Start a fresh recorder for new chunks after 1 second gap
+    setTimeout(startNewRecorder, 1000); // 1 second delay to avoid merging
+  }, 500); // 0.5s to allow recorder to fire final dataavailable event
+}
 
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "ridecam_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
-        a.click();
+function startNewRecorder() {
+  const combinedStream = overlayCanvas.captureStream(30);
+  stream.getTracks().forEach(t => combinedStream.addTrack(t));
 
-        showSavedPopup();
-        saveNotice.style.display = "none";
-        savingInProgress = false;
+  buffer = [];
+  recorder = new MediaRecorder(combinedStream, { mimeType });
 
-        // If STOP was requested during save, handle it
-        if (stopRequestedDuringSave) {
-            stopRequestedDuringSave = false;
-            stopCamera();
-        }
+  const BUFFER_SECONDS = 30;
+  const TIMESLICE = 1000;
+  const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE);
 
-    }, 750); // 750ms is enough for MediaRecorder to provide the final chunk
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) buffer.push(e.data);
+
+    while (buffer.length > MAX_CHUNKS) {
+      buffer.shift();
+    }
+  };
+
+  recorder.start(TIMESLICE);
 }
 /* ---------- FINISH SAVING ---------- */
 function finishSaving() {
