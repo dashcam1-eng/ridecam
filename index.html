@@ -250,7 +250,7 @@ h1 {
       <h3>How does this work?</h3>
       <p>
         Click Start when you're ready to start your drive.<br>
-        The camera keeps the last 5 minutes.<br>
+        The camera keeps the last 30 seconds <br>
         When something happens, press <b>Save Video</b>.
       </p>
     </div>
@@ -374,7 +374,7 @@ navButtons.donations.onclick = () => showPage("donations");
 /* ---------- DASHCAM FUNCTIONALITY ---------- */
 let stream, recorder;
 let buffer = [];
-const maxChunks = 60;
+const maxChunks = 30;
 const preview = document.getElementById("preview");
 const startBtn = document.getElementById("startBtn");
 const controls = document.getElementById("controls");
@@ -577,7 +577,7 @@ async function startRecording() {
     recorder = new MediaRecorder(combinedStream, { mimeType });
 
    // --- OPTION A (rolling buffer, correct implementation) ---
-const BUFFER_SECONDS = 60;   // 5 minutes
+const BUFFER_SECONDS = 30;   // 30 secondss
 const TIMESLICE = 1000;       // 1 sec per chunk
 const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE); // 300 chunks
 
@@ -586,7 +586,7 @@ recorder.start(TIMESLICE);
 recorder.ondataavailable = (e) => {
   if (e.data.size > 0) buffer.push(e.data);
 
-  // Keep last 5 minutes only
+  // Keep last 30 seconds only
   while (buffer.length > MAX_CHUNKS) {
     buffer.shift();
   }
