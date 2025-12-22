@@ -372,9 +372,14 @@ navButtons.legal.onclick = () => showPage("legal");
 navButtons.donations.onclick = () => showPage("donations");
 
 /* ---------- DASHCAM FUNCTIONALITY ---------- */
-let stream, recorder;
+let stream = null;
+let recorder = null;
 let buffer = [];
-const maxChunks = 30;
+let savingInProgress = false;
+let stopRequestedDuringSave = false;
+let mimeType = "";
+let recorderRestartTimeout = null;
+
 const preview = document.getElementById("preview");
 const startBtn = document.getElementById("startBtn");
 const controls = document.getElementById("controls");
@@ -382,36 +387,65 @@ const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
 const description = document.getElementById("description");
 const saveNotice = document.getElementById("saveNotice");
-
-/* NEW */
 const savedPopup = document.getElementById("savedPopup");
 
-let mimeType = "";
-let drawing = false;
-let savingInProgress = false;
-let saveTimeout = null;
+/* ---------- BUFFER SETTINGS ---------- */
+const BUFFER_SECONDS = 30;
+const TIMESLICE = 1000; 
+const MAX_CHUNKS = BUFFER_SECONDS;
 
+/* ---------- OVERLAY CANVAS ---------- */
 const overlayCanvas = document.createElement("canvas");
 overlayCanvas.style.display = "none";
 document.body.appendChild(overlayCanvas);
 const ctx = overlayCanvas.getContext("2d");
+let drawing = false;
 
-/* --- SPEEDOMETER VARS --- */
+/* ---------- SPEED TRACKING ---------- */
 let speedKmh = 0;
 let lastPos = null;
 let lastTime = null;
 
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const toRad = x => x * Math.PI / 180;
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lon2 - lon1);
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateSpeed(position) {
+  const { latitude, longitude } = position.coords;
+  const now = position.timestamp;
+  if (lastPos && lastTime) {
+    const dist = calculateDistance(lastPos.lat, lastPos.lon, latitude, longitude);
+    const timeDiff = (now - lastTime) / 1000;
+    if (timeDiff > 0) speedKmh = dist / timeDiff * 3.6;
+  }
+  lastPos = { lat: latitude, lon: longitude };
+  lastTime = now;
+}
+
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(updateSpeed, console.error, {
+    enableHighAccuracy: true,
+    maximumAge: 1000,
+    timeout: 5000
+  });
+}
+
 /* ---------- CANVAS RESIZE ---------- */
 function resizeCanvas() {
   const rect = preview.getBoundingClientRect();
-  const width = rect.width || window.innerWidth;
-  const height = rect.height || (window.innerHeight - 60);
-  overlayCanvas.width = width;
-  overlayCanvas.height = height;
+  overlayCanvas.width = rect.width || window.innerWidth;
+  overlayCanvas.height = rect.height || (window.innerHeight - 60);
   overlayCanvas.style.left = rect.left + "px";
   overlayCanvas.style.top = rect.top + "px";
-  overlayCanvas.style.width = width + "px";
-  overlayCanvas.style.height = height + "px";
+  overlayCanvas.style.width = overlayCanvas.width + "px";
+  overlayCanvas.style.height = overlayCanvas.height + "px";
 }
 
 preview.addEventListener("loadedmetadata", () => setTimeout(resizeCanvas, 120));
@@ -428,8 +462,7 @@ function drawOverlay() {
   const topMenuHeight = 60;
   const safeTop = parseInt(getComputedStyle(document.documentElement)
                      .getPropertyValue("env(safe-area-inset-top)")) || 0;
-
-  const bottomControlsHeight = overlayCanvas.height * 0.36 + 50; 
+  const bottomControlsHeight = overlayCanvas.height * 0.36 + 50;
 
   const baseFontSize = Math.max(16, overlayCanvas.width * 0.04) * 0.5;
   ctx.font = `${baseFontSize}px Arial`;
@@ -438,165 +471,21 @@ function drawOverlay() {
 
   const dateText = new Date().toLocaleString();
   const speedText = `Speed: ${speedKmh.toFixed(1)} km/h`;
-
-  const dateWidth = ctx.measureText(dateText).width;
-  const speedWidth = ctx.measureText(speedText).width;
   const centerX = overlayCanvas.width / 2;
 
-  const minY = topMenuHeight + safeTop + 10;
-  const maxY = overlayCanvas.height - bottomControlsHeight - baseFontSize*2 - 10;
-  const yPos = Math.min(minY, maxY);
+  ctx.fillText(dateText, centerX - ctx.measureText(dateText).width/2, topMenuHeight + safeTop + 10);
+  ctx.fillText(speedText, centerX - ctx.measureText(speedText).width/2, topMenuHeight + safeTop + 10 + baseFontSize + 4);
 
-  ctx.fillText(dateText, centerX - dateWidth/2, yPos);
-  ctx.fillText(speedText, centerX - speedWidth/2, yPos + baseFontSize + 4);
-
-  /* ---------- WATERMARK — ENLARGED 400% ---------- */
   ctx.font = `${baseFontSize * 1.6 * 4}px Arial`;
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.textBaseline = "bottom";
   const watermark = "Ridecam.ca";
-  const wmWidth = ctx.measureText(watermark).width;
-  const wmX = (overlayCanvas.width / 2) - (wmWidth / 2);
-  const wmY = overlayCanvas.height - 40;
-  ctx.fillText(watermark, wmX, wmY);
+  ctx.fillText(watermark, centerX - ctx.measureText(watermark).width/2, overlayCanvas.height - 40);
 
   requestAnimationFrame(drawOverlay);
 }
 
-/* ---------- SPEED TRACKING ---------- */
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const toRad = x => x * Math.PI / 180;
-
-    const φ1 = toRad(lat1);
-    const φ2 = toRad(lat2);
-    const Δφ = toRad(lat2 - lat1);
-    const Δλ = toRad(lon2 - lon1);
-
-    const a = Math.sin(Δφ/2)**2 +
-              Math.cos(φ1)*Math.cos(φ2) *
-              Math.sin(Δλ/2)**2;
-
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function updateSpeed(position) {
-    const { latitude, longitude } = position.coords;
-    const now = position.timestamp;
-
-    if (lastPos && lastTime) {
-        const dist = calculateDistance(lastPos.lat, lastPos.lon, latitude, longitude);
-        const timeDiff = (now - lastTime) / 1000;
-
-        if (timeDiff > 0) {
-            const speedMs = dist / timeDiff;
-            speedKmh = speedMs * 3.6;
-        }
-    }
-
-    lastPos = { lat: latitude, lon: longitude };
-    lastTime = now;
-}
-
-navigator.geolocation.watchPosition(updateSpeed, console.error, {
-    enableHighAccuracy: true,
-    maximumAge: 1000,
-    timeout: 5000
-});
-
-/* ---------- SAVE POPUP FUNCTION ---------- */
-function showSavedPopup() {
-  savedPopup.style.display = "block";
-  setTimeout(() => savedPopup.style.display = "none", 4000);
-}
-
-let preloadedStream = null;
-
-// Preload camera and ask for permissions
-async function preloadCamera() {
-  try {
-    preloadedStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
-
-    // Show preview in hidden mode to initialize camera
-    preview.srcObject = preloadedStream;
-    preview.style.display = "none";
-
-  } catch (err) {
-    console.warn("Camera preload failed:", err);
-  }
-}
-
-// Preload location permission
-let watchId = null;
-function preloadLocation() {
-  if (navigator.geolocation) {
-    watchId = navigator.geolocation.watchPosition(
-      updateSpeed,
-      console.error,
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
-    );
-  }
-}
-
-// Call these on page load
-preloadCamera();
-preloadLocation();
-
-/* ---------- START RECORDING ---------- */
-async function startRecording() {
-  try {
-    mimeType = pickMimeType();
-   if (!preloadedStream) {
-  // fallback if preload failed
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode:"environment" },
-    audio: false
-  });
-} else {
-  stream = preloadedStream;
-}
-
-    preview.srcObject = stream;
-    preview.style.display = "block";
-    startBtn.style.display = "none";
-    description.style.display = "none";
-    controls.style.display = "flex";
-    overlayCanvas.style.display = "block";
-    setTimeout(resizeCanvas, 200);
-
-    drawing = true;
-    drawOverlay();
-
-    const combinedStream = overlayCanvas.captureStream(30);
-    stream.getTracks().forEach(t => combinedStream.addTrack(t));
-
-    buffer = [];
-    recorder = new MediaRecorder(combinedStream, { mimeType });
-
-   // --- OPTION A (rolling buffer, correct implementation) ---
-const BUFFER_SECONDS = 30;   // 30 secondss
-const TIMESLICE = 1000;       // 1 sec per chunk
-const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE); // 300 chunks
-
-recorder.start(TIMESLICE);
-
-recorder.ondataavailable = (e) => {
-  if (e.data.size > 0) buffer.push(e.data);
-
-  // Keep last 30 seconds only
-  while (buffer.length > MAX_CHUNKS) {
-    buffer.shift();
-  }
-};
-
-  } catch (err) {
-    alert("Camera access failed. Try tapping Start again.\n" + err);
-  }
-}
-
+/* ---------- MIME TYPE ---------- */
 function pickMimeType() {
   const options = [
     "video/webm;codecs=vp9",
@@ -607,136 +496,139 @@ function pickMimeType() {
   for (let type of options) {
     if (MediaRecorder.isTypeSupported(type)) return type;
   }
-  return "video/webm"; // fallback
+  return "video/webm";
+}
+
+
+
+const RECORDER_MAX_DURATION = 30_000;
+
+// 🧠 PER-SEGMENT LOGIC
+function startRecorder(combinedStream) {
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop();
+  }
+
+  const localChunks = []; // 👈 local per segment
+
+  recorder = new MediaRecorder(combinedStream, { mimeType });
+
+  recorder.ondataavailable = e => {
+    if (e.data.size) localChunks.push(e.data);
+  };
+
+  recorder.onstop = () => {
+    if (localChunks.length) {
+      segments.push(new Blob(localChunks, { type: mimeType }));
+
+      const maxSegments =
+        BUFFER_SECONDS / (RECORDER_MAX_DURATION / 1000);
+
+      while (segments.length > maxSegments) segments.shift();
+    }
+  };
+
+  recorder.start();
+
+  // 🔁 AUTO-RESTART LOGIC (INSIDE)
+  recorderRestartTimeout = setTimeout(() => {
+  if (recorder && recorder.state !== "inactive") recorder.stop();
+  startRecorder(combinedStream);
+}, RECORDER_MAX_DURATION);
+}
+/* ---------- START RECORDING ---------- */
+async function startRecording() {
+  try {
+    mimeType = pickMimeType();
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
+
+    preview.srcObject = stream;
+    preview.style.display = "block";
+    startBtn.style.display = "none";
+    description.style.display = "none";
+    controls.style.display = "flex";
+    overlayCanvas.style.display = "block";
+
+    drawing = true;
+    drawOverlay();
+    resizeCanvas();
+
+    const combinedStream = overlayCanvas.captureStream(30);
+    stream.getTracks().forEach(t => combinedStream.addTrack(t));
+
+    segments = [];
+    startRecorder(combinedStream);
+
+  } catch (err) {
+    alert("Camera access failed:\n" + err);
+  }
 }
 
 /* ---------- STOP CAMERA ---------- */
 function stopCamera() {
-  try {
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    }
-  } catch(e){}
+  if (recorder && recorder.state !== "inactive") recorder.stop();
+  if (stream) stream.getTracks().forEach(t => t.stop());
 
-  // Stop tracks only if it's a new recording
-  if (stream && stream !== preloadedStream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
+  clearTimeout(recorderRestartTimeout);
 
-  preview.srcObject = preloadedStream; // keep preview ready
   preview.style.display = "none";
   overlayCanvas.style.display = "none";
   drawing = false;
 
   saveNotice.style.display = "none";
   controls.style.display = "none";
-  startBtn.style.display = "block";      // <-- returns to start
-  description.style.display = "block";   // <-- shows description
+  startBtn.style.display = "block";
+  description.style.display = "block";
 
   savingInProgress = false;
-  buffer = [];
-}
-/* ---------- SAVE VIDEO ---------- */
-async function saveVideo() {
-  if (savingInProgress) return;
-  savingInProgress = true;
 
-  saveNotice.innerText = "Saving Video";
+}
+
+/* ---------- SAVE VIDEO ---------- */
+function showSavedPopup() {
+  savedPopup.style.display = "block";
+  setTimeout(() => savedPopup.style.display = "none", 4000);
+}
+
+function saveVideo() {
+  if (savingInProgress || !segments.length) return;
+
+  savingInProgress = true;
   saveNotice.style.display = "block";
 
-  // Stop current recorder to finalize the old file
-  recorder.stop();
+  const blob = new Blob(segments, { type: mimeType });
 
-  // Make a copy of the old buffer
-  const oldBuffer = buffer.slice();
-
-  // Short delay to ensure recorder fires final chunks
-  setTimeout(() => {
-    // Create blob from old buffer
-    const blob = new Blob(oldBuffer, { type: mimeType });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "ridecam_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
-    a.click();
-
-    showSavedPopup();
-    saveNotice.style.display = "none";
-    savingInProgress = false;
-
-    // Clear old buffer
-    buffer = [];
-
-    // Start a fresh recorder for new chunks after 1 second gap
-    setTimeout(startNewRecorder, 1000); // 1 second delay to avoid merging
-  }, 500); // 0.5s to allow recorder to fire final dataavailable event
-}
-
-function startNewRecorder() {
-  const combinedStream = overlayCanvas.captureStream(30);
-  stream.getTracks().forEach(t => combinedStream.addTrack(t));
-
-  buffer = [];
-  recorder = new MediaRecorder(combinedStream, { mimeType });
-
-  const BUFFER_SECONDS = 30;
-  const TIMESLICE = 1000;
-  const MAX_CHUNKS = BUFFER_SECONDS * (1000 / TIMESLICE);
-
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) buffer.push(e.data);
-
-    while (buffer.length > MAX_CHUNKS) {
-      buffer.shift();
-    }
-  };
-
-  recorder.start(TIMESLICE);
-}
-/* ---------- FINISH SAVING ---------- */
-function finishSaving() {
-  saveNotice.style.display = "none";
-
-  // Copy current buffer to avoid modifying it during ongoing recording
-  const bufferCopy = buffer.slice();
-
-  // Create and download blob from copied buffer
-  const blob = new Blob(bufferCopy, { type: mimeType });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "ridecam_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
+  a.download = `ridecam_${Date.now()}.webm`;
   a.click();
 
   showSavedPopup();
-
+  saveNotice.style.display = "none";
   savingInProgress = false;
 
-  // If the user pressed STOP while saving, handle it
+  // ✅ Handle stop request after saving
   if (stopRequestedDuringSave) {
     stopRequestedDuringSave = false;
     stopCamera();
   }
 }
 
-// Track if STOP was pressed during saving
-let stopRequestedDuringSave = false;
+/* ---------- BUTTON EVENTS ---------- */
+startBtn.onclick = startRecording;
+saveBtn.onclick = saveVideo;
 stopBtn.onclick = () => {
   if (savingInProgress) {
-    clearTimeout(saveTimeout);
-    finishSaving();
     stopRequestedDuringSave = true;
   } else {
     stopCamera();
   }
 };
-
-/* ---------- BUTTON EVENTS ---------- */
-startBtn.onclick = startRecording;
-saveBtn.onclick = saveVideo;
-/* ---------- STOP BUTTON ---------- */
-stopBtn.onclick = () => {
-  // Stop recording and return to start screen
-  stopCamera();
-};
 </script>
+
 </body>
 </html>
