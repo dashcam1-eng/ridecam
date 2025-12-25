@@ -55,7 +55,7 @@ nav button {
   }
 
  #appPages {
-  position:absolute;
+  position:relative;
   top:0;             /* let top be 0 */
   left:0;
   width:100%;
@@ -713,6 +713,19 @@ stopBtn.onclick = () => {
     stopCamera();
   }
 };
+
+
+
+function adjustAppPagesPadding() {
+  const navHeight = document.querySelector("nav").offsetHeight;
+  const appPages = document.getElementById("appPages");
+  appPages.style.paddingTop = navHeight + "px";
+}
+
+// Run on load and on window resize
+window.addEventListener("load", adjustAppPagesPadding);
+window.addEventListener("resize", adjustAppPagesPadding);
+
 </script>
 
 </body>
