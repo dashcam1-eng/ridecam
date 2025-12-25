@@ -276,8 +276,7 @@ h1 {
   <!-- DASHCAM PAGE -->
   <div id="dashcamPage" class="page" style="display:block;">
     <div id="description">
-     <br> This is a 100% Free Browser-based dash camera. 
-      Press Start to begin.
+     <br> 100% Free Browser-based Dash Camera. Press Start to begin.
     </div>
 
     <button id="startBtn" class="center-start">Start</button>
@@ -559,7 +558,9 @@ function drawOverlay() {
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.textBaseline = "bottom";
   const watermark = "Ridecam.ca";
-  ctx.fillText(watermark, centerX - ctx.measureText(watermark).width/2, overlayCanvas.height - 40);
+
+const watermarkY = overlayCanvas.height * 0.9; // 90% down
+ctx.fillText(watermark, centerX - ctx.measureText(watermark).width/2, watermarkY);
 
   requestAnimationFrame(drawOverlay);
 }
