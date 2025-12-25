@@ -460,7 +460,7 @@ const description = document.getElementById("description");
 
 setInterval(() => {
   const ready = segments && segments.length;
-  saveBtn.textContent = ready ? "Save Video" : "Video Not Ready";
+  saveBtn.textContent = ready ? "Save Video " : "Video Not Ready";
   saveBtn.classList.toggle("video-not-ready", !ready);
 }, 500);
 
