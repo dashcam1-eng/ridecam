@@ -202,6 +202,14 @@ h1 {
   }
   #description { font-size:18px; }
 }
+
+#saveBtn {
+  transition: opacity 0.2s ease;
+}
+
+#saveBtn.video-not-ready {
+  opacity: 0.6;
+}
 </style>
 </head>
 
@@ -385,7 +393,16 @@ const startBtn = document.getElementById("startBtn");
 const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
+
+
 const description = document.getElementById("description");
+
+setInterval(() => {
+  const ready = segments && segments.length;
+  saveBtn.textContent = ready ? "Save Video" : "Video Not Ready";
+  saveBtn.classList.toggle("video-not-ready", !ready);
+}, 500);
+
 const saveNotice = document.getElementById("saveNotice");
 const savedPopup = document.getElementById("savedPopup");
 
