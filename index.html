@@ -394,6 +394,21 @@ const controls = document.getElementById("controls");
 const saveBtn = document.getElementById("saveBtn");
 const stopBtn = document.getElementById("stopBtn");
 
+// ---------- CAMERA PERMISSION PRELOAD ----------
+let preStream = null; // store preloaded stream
+
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // Ask for camera access, but don't attach to preview yet
+    preStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    console.log("Camera preloaded, permission granted.");
+    // Do NOT stop tracks here; we'll use them when user clicks Start
+  } catch (err) {
+    console.log("Camera permission not granted yet:", err);
+  }
+});
+
+
 
 const description = document.getElementById("description");
 
@@ -558,10 +573,16 @@ async function startRecording() {
   try {
     mimeType = pickMimeType();
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
+    // Use preloaded stream if available
+    if (preStream) {
+      stream = preStream;
+      preStream = null; // clear so next startRecording() requests fresh if needed
+    } else {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      });
+    }
 
     preview.srcObject = stream;
     preview.style.display = "block";
