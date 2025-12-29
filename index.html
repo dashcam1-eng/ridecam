@@ -11,10 +11,15 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
+
 <style>
 body {
-  margin:0; background:#000; color:#fff; font-family:Arial;
-  height:100vh; overflow:hidden;
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:Arial, sans-serif;
+  height:100vh;
+  overflow:hidden;
   position:relative;
 }
 
@@ -25,65 +30,30 @@ nav {
   padding:12px;
   text-align:center;
   position:fixed;
-  top:0; left:0;
+  top:0;
+  left:0;
   z-index:5;
 
-
-  display: flex;           /* allow flex layout */
-  flex-wrap: wrap;         /* wrap buttons to next line if needed */
-  justify-content: center; /* center buttons */
-  gap: 8px;                /* space between buttons */
-
-
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
+
 nav button {
   background:#222;
   border:1px solid #444;
   padding:10px 16px;
   color:white;
-  margin:0 6px;
   border-radius:8px;
   font-size:18px;
   cursor:pointer;
+  transition: background 0.2s;
 }
 
-/* MOBILE SPECIFIC */
-@media(max-width:480px){
-  nav button {
-    padding:12px 14px; /* a bit more padding for touch */
-    font-size:16px;
-  }
-
- #appPages {
-  position:relative;
-  top:0;             /* let top be 0 */
-  left:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  padding-top: 60px; /* default nav height */
-  box-sizing: border-box;
+nav button:hover {
+  background:#333;
 }
-
-/* MOBILE */
-@media(max-width:480px){
-  #appPages {
-    padding-top: 120px; /* estimate nav wrapping height on mobile */
-  }
-}
-
-  .controls {
-    bottom: 10%; /* push bottom buttons up from bottom */
-    gap: 12px;
-  }
-
-  .controls button {
-    padding:14px 20px;
-    font-size:16px;
-  }
-}
-
-
 
 nav button.active {
   background:#007bff;
@@ -97,6 +67,8 @@ nav button.active {
   width:100%;
   height:calc(100vh - 60px);
   overflow:hidden;
+  padding-top:60px;
+  box-sizing: border-box;
 }
 
 /* DASHCAM PAGE */
@@ -113,8 +85,10 @@ nav button.active {
 
 #preview {
   position:absolute;
-  top:0; left:0;
-  width:100%; height:100%;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
   display:none;
   background:#111;
   z-index:1;
@@ -157,9 +131,35 @@ button {
   background:#28a745;
   color:#fff;
   cursor:pointer;
+  transition: transform 0.15s ease, background 0.2s;
+}
+button {
+  padding:18px 26px;
+  font-size:22px;
+  border:none;
+  border-radius:12px;
+  background:#28a745;
+  color:#fff;
+  cursor:pointer;
+  transition: transform 0.15s ease, background 0.2s;
 }
 
-/* START BUTTON (100% LARGER) */
+/* only scale start button, keeping it centered */
+#startBtn:hover {
+  transform: translate(-50%, -50%) scale(1.05);
+  background:#218838;
+}
+
+/* other buttons scale normally */
+.controls button:hover,
+#saveBtn:hover:not(.video-not-ready),
+#stopBtn:hover {
+  transform: scale(1.05);
+}
+
+
+
+/* START BUTTON */
 #startBtn {
   padding:36px 52px;
   font-size:44px;
@@ -182,8 +182,29 @@ button {
   border-radius:16px;
 }
 
-#saveBtn { background:#007bff; color:white; }
-#stopBtn { background:#dc3545; color:white; }
+#saveBtn {
+  background:#007bff;
+  color:white;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+#saveBtn.video-not-ready {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#saveBtn:hover:not(.video-not-ready) {
+  transform: scale(1.05);
+}
+
+#stopBtn {
+  background:#dc3545;
+  color:white;
+}
+
+#stopBtn:hover {
+  transform: scale(1.05);
+}
 
 /* SAVE NOTICE */
 #saveNotice {
@@ -192,21 +213,21 @@ button {
   top: 20%;
   left: 50%;
   transform: translateX(-50%);
-  width: auto;           /* let the width shrink to fit text */
-  max-width: 90%;        /* but not exceed 90% of screen */
-  padding: 8px 12px;     /* optional, gives space around text */
+  width: auto;
+  max-width: 90%;
+  padding: 8px 12px;
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
   z-index: 999;
   text-shadow: 0 0 8px #000;
   color: white;
-  white-space: normal; 
-  word-wrap: break-word; 
-  line-height: 1.3em;    /* prevent lines from overlapping */
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3em;
   box-sizing: border-box;
 }
 
-/* NEW: SAVE CONFIRMATION POPUP */
+/* VIDEO SAVED POPUP */
 #savedPopup {
   display:none;
   position:absolute;
@@ -241,8 +262,15 @@ h1 {
   color:#0af;
 }
 
-/* MOBILE */
+/* MOBILE RESPONSIVENESS */
 @media(max-width:480px){
+  nav button {
+    padding:12px 14px;
+    font-size:16px;
+  }
+  #appPages {
+    padding-top:120px;
+  }
   .controls button, button{
     padding:10px 16px;
     font-size:14px;
@@ -250,13 +278,31 @@ h1 {
   #description { font-size:18px; }
 }
 
-#saveBtn {
-  transition: opacity 0.2s ease;
+/*delete if not working */
+
+/* Center text on all pages except dashcam */
+#faqPage,
+#aboutPage,
+#legalPage,
+#donationsPage {
+  text-align: center;
 }
 
-#saveBtn.video-not-ready {
-  opacity: 0.6;
+#faqPage h1,
+#faqPage p,
+#faqPage .faq-item,
+#aboutPage h1,
+#aboutPage p,
+#legalPage h1,
+#legalPage p,
+#donationsPage h1,
+#donationsPage p {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 800px; /* optional: limit width for readability */
 }
+
+
 </style>
 </head>
 
@@ -361,18 +407,7 @@ h1 {
     <h1>Legal Notice</h1>
     <p>Legal & Liability Notice: RideCam provides general information and tools for personal dashcam use. All recordings, storage, and use of video captured through this site are the sole responsibility of the user. You are responsible for complying with all local, provincial/state, and federal laws regarding privacy, data collection, and the use of recording devices. RideCam makes no guarantees regarding the accuracy, reliability, or legality of recordings made using our service and is not liable for any damages, losses, or legal issues arising from the use or misuse of the dashcam features.
 Use of this site constitutes acceptance of these terms.</p>
-    <h3>Safe Use</h3>
-    <p>
-      • Only use the camera when safe.<br>
-      • Never interact while driving.<br>
-      • Follow all laws.
-    </p>
-
-    <h3>No Liability</h3>
-    <p>Use at your own risk.</p>
-
-    <h3>No Warranty</h3>
-    <p>Provided “as-is”.</p>
+  
   </div>
 
   <!-- DONATIONS -->
