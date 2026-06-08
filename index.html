@@ -104,13 +104,15 @@ canvas {
 }
 
 #description {
-  position: relative;
+  position: absolute;
+  top: 38%;             /* Pulls the text up away from the bottom */
+  left: 50%;            /* Locks the element to the horizontal center line */
+  transform: translateX(-50%); /* Perfectly centers the text bounding box left-to-right */
   width: 85%;
   font-size: 22px;
   text-align: center;
   z-index: 3;
   line-height: 1.4em;
-  margin-bottom: 24px; /* Creates clean space between text and button */
 }
 
 .center-start {
